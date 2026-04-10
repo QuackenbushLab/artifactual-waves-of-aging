@@ -1,6 +1,6 @@
 # Artifactual Waves of Aging
 
-This repository contains code supporting _ Artifactual ``waves" of molecular aging arise when coupling LOESS with DE-SWAN_. 
+This repository contains code supporting _Artifactual ``waves" of molecular aging arise when coupling LOESS with DE-SWAN_. 
 
 
 ## Contents
