@@ -1,0 +1,278 @@
+---
+title: "Artifactual Waves of Aging: Figure 2"
+author: "Kate Shutta"
+date: "2026-04-10"
+output: html_document
+---
+
+# Libraries and packages
+
+Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
+
+```{R}
+source("../null_simulations/loess_utils.R")
+```
+
+Load libraries.
+
+```{R}
+library(DEswan)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+```
+
+# Figure 2
+
+Generate the random data, with ages drawn from a normal distribution with mean 55 and standard deviation 7 and gene expression levels drawn from a standard normal distribution.
+
+```{R}
+set.seed(0303)
+ages = rnorm(n=100, mean=55, sd=7)
+gene = rnorm(100)
+```
+
+Define the DE-SWAN parameters.
+
+```{R}
+bucket = 20
+windows = seq(min(ages)+bucket/2, max(ages)-bucket/2,by=1)
+```
+
+Define the grid of values for LOESS interpolation, run LOESS, and organize into a data frame for plotting.
+
+```{R}
+loess_grid = seq(min(ages),max(ages),by=0.5)
+loess_mod = loess(gene ~ ages)
+loess_original_data = predict(loess_mod)
+loess_data = predict(loess_mod, 
+                     newdata = loess_grid)
+df = data.frame("age"=ages,
+                "gene"=gene,
+                "loess_data_original"=loess_original_data)
+df_loess = data.frame("loess_grid" = loess_grid,
+                      "loess_data"= loess_data)
+```
+
+Create Figure 2, panels a-d, from the simulated data and LOESS fit.
+
+```{R}
+p1 = df %>% ggplot(aes(x=ages,y=gene)) + 
+  geom_ribbon(aes(xmin=min(windows)-bucket/2, 
+                  xmax=min(windows)),
+              alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), 
+                  xmax=min(windows)+bucket/2), 
+              alpha=0.4,
+              fill="darkseagreen1") +
+  geom_point() +
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+p1
+```
+
+```{R}
+p2 = df %>% ggplot(aes(x=ages,y=gene)) +
+  geom_ribbon(aes(xmin=min(windows)-bucket/2, 
+                  xmax=min(windows)),
+              alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), 
+                xmax=min(windows)+bucket/2), 
+            alpha=0.4,
+            fill="darkseagreen1") +
+  geom_point(alpha=0.1) +
+  geom_line(aes(x=ages,y=loess_data_original),color="black") +
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+p2
+```
+
+```{R}
+p3 = df %>% ggplot(aes(x=ages,y=gene)) + 
+  geom_ribbon(aes(xmin=min(windows)-bucket/2, 
+                  xmax=min(windows)),
+              alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), 
+                  xmax=min(windows)+bucket/2), 
+              alpha=0.4,
+              fill="darkseagreen1") +
+  geom_point(alpha=0.1) + 
+  geom_point(aes(x=ages,y=loess_data_original),color="black")+
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+p3
+```
+
+```{R}
+p4 = df %>% ggplot(aes(x=ages,y=gene)) + 
+  geom_ribbon(aes(xmin=min(windows)-bucket/2, 
+                  xmax=min(windows)),
+              alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), 
+                  xmax=min(windows)+bucket/2), 
+              alpha=0.4,
+              fill="darkseagreen1") +
+  geom_point(alpha=0.1) + 
+  geom_point(data=df_loess, aes(x=loess_grid,
+                                y=loess_data))+
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+p4
+```
+
+Define "younger" and "older" windows for the first sliding window as an illustrative example.
+
+```{R}
+df$group = ifelse(df$age <= min(windows),"younger", 
+                        ifelse(min(windows) < df$age &  
+                                 df$age <= min(windows) + bucket/2, "older",NA))
+df$group = fct_reorder(df$group, df$age)
+
+df_loess$group = ifelse(df_loess$loess_grid <= min(windows),"younger", 
+                        ifelse(min(windows) < df_loess$loess_grid &  
+                df_loess$loess_grid <= min(windows) + bucket/2, "older",NA))
+df_loess$group = fct_reorder(df_loess$group, df_loess$loess_grid)
+```
+
+Zoom in on the first window (ages 35-45).
+
+```{R}
+q1 = df %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(x=ages,y=gene)) +
+  xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
+  geom_vline(xintercept = min(windows),col="grey") +
+  geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
+  geom_point() +
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+
+q2 = ggplot(data = df, aes(x=ages,y=gene)) +
+  xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
+  geom_vline(xintercept = min(windows),col="grey") +
+  geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
+  geom_point(alpha = 0.5) +
+  geom_line(aes(x=ages,y=loess_data_original),color="red") +
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+```
+
+Run DE-SWAN on the LOESS-interpolated data, using a bucket of size 20 and window centers incrementing by 1 year and designed to span the age range.
+
+```{R}
+bucket = 20
+windows = seq(min(ages)+bucket/2, max(ages)-bucket/2,by=1)
+de_swan_res = do_de_swan(age = loess_grid,
+                response = t(data.frame(loess_data)),
+                window = windows,
+                buckets_size = bucket)
+```
+
+Plot first window expression without LOESS.
+
+```{R}
+q1 = ggplot(data = df, aes(x=ages,y=gene)) +
+  xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
+  geom_vline(xintercept = min(windows),col="grey") +
+  geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
+  geom_point() +
+  xlab("age") + 
+  ylab("expression") +
+  theme_minimal()
+q1
+```
+
+Plot first window ranks without LOESS. 
+
+```{R}
+q8 = df %>%
+  filter(!is.na(group)) %>%
+  mutate(rank = rank(gene)) %>%
+  ggplot(aes(x=group,y=rank,color=group)) + 
+  geom_jitter(width=0.2,height=0)+
+  scale_color_manual(values=c("coral3","darkgreen")) + 
+  theme_minimal() +
+  theme(legend.position="none",
+        axis.title.x = element_blank()) 
+q8
+```
+
+Plot first window boxplots and Wilcoxon test without LOESS.
+
+```{R}
+q7 = df %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(y=gene,x=group,fill=group)) +
+  geom_boxplot(outlier.shape=NA) + 
+  geom_jitter(height=0,width=0.1) + 
+  scale_fill_manual(values=c("peachpuff2","darkseagreen1")) +
+  stat_compare_means(position = position_nudge(y = -0.8,x=-0.3)) + 
+  ylab("expression") + 
+  theme_minimal() +
+  theme(legend.position="none",
+        axis.title.x = element_blank()) 
+q7
+```
+
+
+Plot first window LOESS-interpolated expression. 
+
+```{R}
+q3 = df %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(x=age,y=gene)) +
+  xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
+  geom_vline(xintercept = min(windows),col="grey") +
+  geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
+  geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
+  geom_point(alpha = 0.2) +
+  geom_point(data=df_loess[!is.na(df_loess$group),],aes(x=loess_grid,y=loess_data),color="black") + 
+  xlab("age") + 
+  ylab("loess-interpolated expression") +
+  theme_minimal()
+q3
+```
+
+Plot first window LOESS-interpolated ranks.
+
+```{R}
+q6 = df_loess %>%
+  filter(!is.na(group)) %>%
+  mutate(rank = rank(loess_data)) %>%
+  ggplot(aes(x=group,y=rank,color=group)) + 
+  geom_jitter(width=0.2,height=0)+
+  scale_color_manual(values=c("coral3","darkgreen")) + 
+  ylab("loess-interpolated rank") + 
+  theme_minimal() +
+  theme(legend.position="none",
+        axis.title.x = element_blank())
+q6
+```
+
+Plot first window boxplots and Wilcoxon test results for LOESS-interpolated data.
+
+```{R}
+q5 = df_loess %>%
+  filter(!is.na(group)) %>%
+  ggplot(aes(y=loess_data,x=group,fill=group)) +
+  geom_boxplot() + 
+  geom_jitter(height=0,width=0.1) + 
+  stat_compare_means(position = position_nudge(y = -0.1,x=0.6)) + 
+  scale_fill_manual(values=c("peachpuff2","darkseagreen1")) +
+  ylab("loess-interpolated expression") + 
+  theme_minimal() +
+  theme(legend.position="none",
+        axis.title.x= element_blank()) 
+q5
+```
+

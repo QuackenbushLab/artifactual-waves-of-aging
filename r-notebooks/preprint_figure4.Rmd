@@ -1,0 +1,120 @@
+---
+title: "Artifactual Waves of Aging: Figure 4"
+author: "Kate Shutta"
+date: "2026-04-10"
+output: html_document
+---
+
+# Libraries and packages
+
+Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
+
+```{R}
+source("../null_simulations/loess_utils.R")
+```
+
+Load libraries.
+
+```{R}
+library(DEswan)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(logr)
+# optional for parallel processing
+library(foreach)
+library(doParallel)
+```
+
+# Figure 4
+
+Load the sample data. 
+
+```{R}
+ipop_sample_data = read.csv("../ext/sample_info.csv")
+```
+
+Specify number of simulations and register parallel processing.
+
+```{R}
+nit = 2
+doParallel::registerDoParallel(cores=2)
+```
+
+Run LOESS + DE-SWAN on the iPOP age distribution for $nit$ different random samples. In each case, the "expression levels" of the 8556 transcripts are simulated independently according to a uniform distribution. 
+
+```{R}
+transcriptomic_ipop = foreach(i=1:nit) %dopar%
+{ 
+  test_age_dist(ipop_sample_data$adjusted_age,
+              npred = 8556,
+              bucket = 20, 
+              optimize_loess = F, 
+              do_ipop = T,
+              do_log = T,
+              distribution = "standard_normal")
+}
+
+#save(transcriptomic_ipop,file="results/transcriptomic_ipop.rda")
+
+doParallel::stopImplicitCluster()
+```
+
+Plot the waves of aging.
+
+```{R}
+plot_from_sim_list(transcriptomic_ipop,npred=8556) + 
+  ylim(5000,7000) +
+  geom_vline(xintercept = 45, linetype = "dashed") +
+  geom_vline(xintercept = 61, linetype = "dashed") +
+  annotate("text",x=48.5,y=5000,label="iPOP Tx Crest 1: 44") +
+  annotate("text",x=57.5,y=5000,label="iPOP Tx Crest 2: 61") +
+  ggtitle('Waves of Aging in Random "Transcriptomics"') +
+  theme_minimal() +
+  theme(title = element_text(hjust=0.5),
+        legend.position = "none")
+ggsave("ipop_waves.jpeg",width=7,height=7,dpi=300)
+```
+
+# Do the same for protmeomcs
+
+```{R}
+ipop_protein_ages = read.csv("~/Desktop/sample_info_proteomics.csv")$adjusted_age
+
+```
+
+```{R}
+nit = 50
+doParallel::registerDoParallel(cores=5)
+```
+
+```{R}
+proteomic_ipop = foreach(i=1:nit) %dopar%
+{ 
+  test_age_dist(ipop_protein_ages,
+              npred = 303,
+              bucket = 20, 
+              optimize_loess = F, 
+              do_ipop = T,
+              do_log = T,
+              distribution = "standard_normal")
+}
+
+#save(transcriptomic_ipop,file="results/transcriptomic_ipop.rda")
+
+doParallel::stopImplicitCluster()
+```
+
+```{R}
+plot_from_sim_list(proteomic_ipop,npred=303) + 
+  ylim(170,260) +
+  geom_vline(xintercept = 44, linetype = "dashed") +
+  geom_vline(xintercept = 57, linetype = "dashed") +
+  annotate("text",x=45,y=175,label="iPOP Proteomic Crest 1: 44") +
+  annotate("text",x=56,y=175,label="iPOP Proteomic Crest 2: 57") +
+  ggtitle('Waves of Aging in Random "Proteomics (n=303)"') +
+  theme_minimal() +
+  theme(title = element_text(hjust=0.5),
+        legend.position = "none")
+```
