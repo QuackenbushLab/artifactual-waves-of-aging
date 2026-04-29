@@ -1,0 +1,235 @@
+---
+title: "Artifactual Waves of Aging: Figure 3"
+author: "Kate Shutta"
+date: "2026-04-10"
+output: html_document
+---
+
+# Libraries and packages
+
+Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
+
+```{R}
+source("../null_simulations/loess_utils.R")
+```
+
+Load libraries.
+
+```{R}
+library(DEswan)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(logr) # to log iterations for monitoring progress
+```
+
+
+# Figure 3 simulation 
+
+Define simulation parameters.
+
+```{R}
+nit = 10
+npred = 50
+bucket = 20
+logfile = "loess_notebook.log"
+log_open(logfile, logdir =F)
+distribution = "standard_normal"
+```
+
+Simulate age distributions.
+
+```{R}
+set.seed(1989)
+uniform_ages = runif(n=200,min=20,max=80)
+gaussian_ages = rnorm(n=200,mean=50, sd=8)
+gaussian_mixture_ages = c(rnorm(n=100,35,6),rnorm(n=100,65,6))
+```
+
+Load iPOP age distribution from provided data for transcriptomics in the Shen et al. github.
+
+```{R}
+# replace with wget for full standalone file
+ipop_sample_data = read.csv("../ext/transcriptomics/sample_info.csv")
+ipop_ages = ipop_sample_data$adjusted_age
+```
+
+Test each distribution, saving the simulation results for later use.
+
+```{R testUniform, results=F}
+unif_peaks_list = list()
+for(i in 1:nit)
+{
+  if(i %% 10 == 0)
+    log_print(paste("Uniform iteration", i))
+  unif_peaks_list[[i]] = test_age_dist(uniform_ages,
+                              npred=npred,
+                              bucket=bucket, 
+                              optimize_loess = F, 
+                              do_log = T,
+                              distribution=distribution)
+}
+
+save(unif_peaks_list,file="uniform_loess_deswan.rda")
+```
+
+```{R testGaussian, results=F}
+gaussian_peaks_list = list()
+for(i in 1:nit)
+{
+  if(i %% 10 == 0)
+    log_print(paste("Gaussian iteration", i))
+  gaussian_peaks_list[[i]] = test_age_dist(gaussian_ages,npred=npred,bucket=bucket,distribution=distribution)
+}
+save(gaussian_peaks_list,file="gaussian_loess_deswan.rda")
+```
+
+
+```{R testMixtureGaussian, results=F}
+gaussmix_peaks_list = list()
+for(i in 1:nit)
+{   
+  if(i %% 10 == 0)
+    log_print(paste("Gaussian mixture iteration", i))
+  gaussmix_peaks_list[[i]] = test_age_dist(gaussian_mixture_ages,npred=npred,bucket=bucket,distribution=distribution)
+}
+save(gaussmix_peaks_list,file="gaussian_mixture_loess_deswan.rda")
+```
+
+
+```{R testiPOP, results=F}
+ipop_peaks_list = list()
+for(i in 1:nit)
+{
+    if(i %% 10 == 0)
+    log_print(paste("ipop mixture iteration", i))
+  ipop_peaks_list[[i]] = test_age_dist(ipop_ages,npred=npred,bucket=bucket,distribution=distribution)
+}
+save(ipop_peaks_list,file="ipop_loess_deswan.rda")
+```
+
+# Figure 3 plots
+
+Load the results, if saved earlier.
+
+```{R}
+load("uniform_loess_deswan.rda")
+load("gaussian_loess_deswan.rda")
+load("gaussian_mixture_loess_deswan.rda")
+load("ipop_loess_deswan.rda")
+```
+
+## Plot the age distributions.
+
+```{R}
+
+p1 = ggplot(data = data.frame("age"=uniform_ages), 
+       aes(x=age)) + 
+  geom_histogram(bins=30,color="black",fill="white") +
+  ggtitle("Uniform Ages") + 
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p2 = ggplot(data = data.frame("age"=gaussian_ages), 
+       aes(x=age)) + 
+  geom_histogram(bins=30,color="black",fill="white") +
+  ggtitle("Gaussian Ages") + 
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+
+p3 = ggplot(data = data.frame("age"=gaussian_mixture_ages), 
+       aes(x=age)) + 
+  geom_histogram(bins=30,color="black",fill="white") +
+  ggtitle("Gaussian Mixture Ages") + 
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p4 = ggplot(data = data.frame("age"=ipop_ages), 
+       aes(x=age)) + 
+  geom_histogram(bins=30,color="black",fill="white") +
+  ggtitle("iPOP Ages") + 
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+ageDists = arrangeGrob(p1,p2,p3,p4,nrow=1)
+ggsave("age_distributions.jpeg",ageDists,width=16,height=4,dpi=400)
+ageDists
+```
+
+## Plot the peaks for simulations running LOESS+DE-SWAN.
+
+```{R}
+p1 = plot_from_sim_list(unif_peaks_list, npred=npred, loess=T) + 
+  ggtitle("Uniform Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+
+p2 = plot_from_sim_list(gaussian_peaks_list, npred=npred, loess=T) + 
+  ggtitle("Gaussian Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+p3 = plot_from_sim_list(gaussmix_peaks_list, npred=npred, loess=T) + 
+  ggtitle("Gaussian Mixture Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+p4 = plot_from_sim_list(ipop_peaks_list, npred=npred, loess=T) + 
+  ggtitle("iPOP Ages") +
+  xlim(c(20,80)) + 
+  geom_vline(xintercept=44,linetype=2) + 
+  annotate("text",x=39,y=500,label="Crest 1: 44") +
+  geom_vline(xintercept=60,linetype=2) +
+  annotate("text",x=55,y=500,label="Crest 2: 60") +
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+peakDists = arrangeGrob(p1,p2,p3,p4,nrow=1)
+ggsave("peak_distributions.jpeg",peakDists,width=16,height=4,dpi=400)
+```
+
+## Plot the peaks for simulations running DE-SWAN without LOESS
+
+```{R}
+p1 = plot_from_sim_list(unif_peaks_list, npred=npred, loess=F) + 
+  ggtitle("Uniform Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+p2 = plot_from_sim_list(gaussian_peaks_list, npred=npred, loess=F) + 
+  ggtitle("Gaussian Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+p3 = plot_from_sim_list(gaussmix_peaks_list, npred=npred, loess=F) + 
+  ggtitle("Gaussian Mixture Ages") +
+  xlim(c(20,80)) + 
+  theme_minimal() + 
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+p4 = plot_from_sim_list(ipop_peaks_list, npred=npred, loess=F) + 
+  ggtitle("iPOP Ages") +
+  theme_minimal() +
+  xlim(c(20,80)) + 
+  theme(axis.title = element_text(size=15),plot.title = element_text(size=20, hjust=0.5),legend.position="none")
+
+peakDistsNoLoess = arrangeGrob(p1,p2,p3,p4,nrow=1)
+ggsave("peak_distributions_no_loess.jpeg",peakDistsNoLoess,width=16,height=4,dpi=400)
+peakDistsNoLoess
+```
