@@ -22,6 +22,8 @@ library(ggplot2)
 library(ggpubr)
 library(gridExtra)
 library(logr) # to log iterations for monitoring progress
+library(foreach)
+library(doParallel)
 ```
 
 
@@ -30,12 +32,13 @@ library(logr) # to log iterations for monitoring progress
 Define simulation parameters.
 
 ```{R}
-nit = 10
-npred = 50
+nit = 100
+npred = 1000
 bucket = 20
 logfile = "loess_notebook.log"
 log_open(logfile, logdir =F)
 distribution = "standard_normal"
+doParallel::registerDoParallel(cores=5)
 ```
 
 Simulate age distributions.
@@ -58,12 +61,11 @@ ipop_ages = ipop_sample_data$adjusted_age
 Test each distribution, saving the simulation results for later use.
 
 ```{R testUniform, results=F}
-unif_peaks_list = list()
-for(i in 1:nit)
+unif_peaks_list = foreach(i=1:nit) %dopar%
 {
   if(i %% 10 == 0)
     log_print(paste("Uniform iteration", i))
-  unif_peaks_list[[i]] = test_age_dist(uniform_ages,
+    test_age_dist(uniform_ages,
                               npred=npred,
                               bucket=bucket, 
                               optimize_loess = F, 
@@ -75,36 +77,47 @@ save(unif_peaks_list,file="uniform_loess_deswan.rda")
 ```
 
 ```{R testGaussian, results=F}
-gaussian_peaks_list = list()
-for(i in 1:nit)
+gaussian_peaks_list = foreach(i=1:nit) %dopar%
 {
   if(i %% 10 == 0)
     log_print(paste("Gaussian iteration", i))
-  gaussian_peaks_list[[i]] = test_age_dist(gaussian_ages,npred=npred,bucket=bucket,distribution=distribution)
+  test_age_dist(gaussian_ages,
+                              npred = npred, 
+                              bucket=bucket, 
+                              optimize_loess = F, 
+                              do_log = T,
+                              distribution=distribution)
 }
 save(gaussian_peaks_list,file="gaussian_loess_deswan.rda")
 ```
 
 
 ```{R testMixtureGaussian, results=F}
-gaussmix_peaks_list = list()
-for(i in 1:nit)
+gaussmix_peaks_list = foreach(i=1:nit) %dopar%
 {   
   if(i %% 10 == 0)
     log_print(paste("Gaussian mixture iteration", i))
-  gaussmix_peaks_list[[i]] = test_age_dist(gaussian_mixture_ages,npred=npred,bucket=bucket,distribution=distribution)
+  test_age_dist(gaussian_mixture_ages,                                                  npred=npred,
+                              bucket=bucket, 
+                              optimize_loess = F, 
+                              do_log = T,
+                              distribution=distribution)
 }
 save(gaussmix_peaks_list,file="gaussian_mixture_loess_deswan.rda")
 ```
 
 
 ```{R testiPOP, results=F}
-ipop_peaks_list = list()
-for(i in 1:nit)
+ipop_peaks_list = foreach(i=1:nit) %dopar%
 {
     if(i %% 10 == 0)
     log_print(paste("ipop mixture iteration", i))
-  ipop_peaks_list[[i]] = test_age_dist(ipop_ages,npred=npred,bucket=bucket,distribution=distribution)
+    test_age_dist(ipop_ages,
+                              npred=npred,
+                              bucket=bucket, 
+                              optimize_loess = F, 
+                              do_log = T,
+                            distribution=distribution)
 }
 save(ipop_peaks_list,file="ipop_loess_deswan.rda")
 ```
