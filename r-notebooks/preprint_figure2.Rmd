@@ -236,7 +236,8 @@ q3 = df %>%
   geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
   geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
   geom_point(alpha = 0.2) +
-  geom_point(data=df_loess[!is.na(df_loess$group),],aes(x=loess_grid,y=loess_data),color="black") + 
+  geom_point(data=df_loess[!is.na(df_loess$group),],
+             aes(x=loess_grid,y=loess_data),color="black") + 
   xlab("age") + 
   ylab("loess-interpolated expression") +
   theme_minimal()
@@ -276,3 +277,14 @@ q5 = df_loess %>%
 q5
 ```
 
+Save plots.
+
+```{R}
+layout_matrix = matrix(c(1, 2, 3),nrow=1)
+qplot1 = arrangeGrob(q1, q8, q7,
+                    layout_matrix = layout_matrix)
+qplot2 = arrangeGrob(q3, q6, q5,
+                    layout_matrix = layout_matrix)
+ggsave(qplot1,file="loess_de_swan_figure_b.jpeg",width=10,height=3.5,dpi=300)
+ggsave(qplot2,file="loess_de_swan_figure_c.jpeg",width=10,height=3.5,dpi=300)
+```
