@@ -8,10 +8,10 @@ This repository contains code supporting _Artifactual "waves" of molecular aging
 
 ## Authors
 
-Madeleine Carbonneau<sup>1,*</sup>, Katherine H. Shutta<sup>1,*</sup>, Jeffrey W. Miller<sup>1</sup>, John Quackenbush<sup>1,2,3</sup>
+Madeleine Carbonneau<sup>1,A</sup>, Katherine H. Shutta<sup>1,A</sup>, Jeffrey W. Miller<sup>1</sup>, John Quackenbush<sup>1,2,3</sup>
 
 <sup>1</sup> Department of Biostatistics, Harvard T.H. Chan School of Public Health, Boston, MA, USA  
 <sup>2</sup> Channing Division of Network Medicine, Brigham and Women's Hospital, Boston, MA, USA  
 <sup>3</sup> Department of Data Science, Dana-Farber Cancer Institute, Boston, MA, USA  
 
-<sup>*</sup> Equal contribution
+<sup>A</sup> Equal contribution
