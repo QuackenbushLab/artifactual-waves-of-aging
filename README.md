@@ -2,6 +2,15 @@
 
 This repository contains code supporting _Artifactual "waves" of molecular aging arise when coupling LOESS with DE-SWAN_. 
 
+<!-- ## USE: 
+``` 
+git clone ___
+cd ___
+virtualenv venv to create your new environment (called 'venv' here)
+source venv/bin/activate to enter the virtual environment
+pip install -r requirements.txt 
+```  -->
+
 ## Contents
 
 + `r-notebooks` contains the scripts for Section 3: "Simulation example on a single gene", Section 4: "4	Waves of aging appear in null data and depend on the age distribution", and Figures 2, 3, and 4.
