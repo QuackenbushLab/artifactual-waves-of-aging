@@ -18,7 +18,7 @@ Code for the DE-SWAN simulations can be found in `simulations/DE-SWAN`. In each 
 * `bimodal_2_dist`: Sets age distribution to be bimodal (specification 2) (Figure XX: Row 4)
 * MC TO-DO: Fill in the rest of these
 
-Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. To run one simulation, navigate to the root folder (artifactual-waves-of-aging) and use
+Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. To run one simulation, navigate to the root folder (`artifactual-waves-of-aging`) and use
 
 ```python
 simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}

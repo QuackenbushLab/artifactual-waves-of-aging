@@ -54,3 +54,5 @@ ipop_data_analysis/nonlinear_aging_data/*
 venv/
 
 simulations/DE-SWAN/normal_dist/results/
+simulations/DE-SWAN/uniform_dist/results/
+
