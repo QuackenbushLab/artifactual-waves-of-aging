@@ -50,3 +50,8 @@ rsconnect/
 
 ipop_data_analysis/nonlinear_aging_data/*
 
+.venv/
+venv/
+
+simulations/DE-SWAN/normal_dist/results/*
+
