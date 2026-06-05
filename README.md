@@ -24,7 +24,7 @@ Within each folder, there is a configuration file with parameters for each simul
 simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}
 ```
 
-To run multiple simulations, calling this script can be looped. For large simulations, we recommend using external computing resources. 
+where `{SIM_NUM}` is some integer value indexing the simulation. To run multiple simulations, calling this script can be looped. For large simulations, we recommend using external computing resources. 
 
 `simulations/DE-SWAN/de_SWAN_helpers.py` contains helper functions used by all simulation settings.
 
