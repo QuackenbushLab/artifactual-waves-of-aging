@@ -7,7 +7,7 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.stats import uniform
+from scipy.stats import norm
 
 
 ##### Import config from parent directory
@@ -17,7 +17,9 @@ UNIF_DIST_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 if UNIF_DIST_DIR not in sys.path:
     sys.path.insert(0, UNIF_DIST_DIR)
 
-import unif_dist_configs as config
+import bimodal_dist_configs as config
+
+
 
 ##### Paths
 results_dir = config.RESULTS_DIR
@@ -31,6 +33,10 @@ x_lower = config.MIN_AGE + 3
 x_upper = config.MAX_AGE - 3
 fig_width = 5.0
 fig_height = 4
+
+plot_dir = os.path.join(results_dir, "plots")
+os.makedirs(plot_dir, exist_ok=True)
+
 
 ##### Publication-style matplotlib settings for LaTeX / Overleaf
 plt.rcParams.update({
@@ -48,17 +54,52 @@ plt.rcParams.update({
 })
 
 
-
 ##### Helper functions
 
-def truncated_unif_mean(lower, upper, a, b):
-    clipped_lower = max(lower, a)
-    clipped_upper = min(upper, b)
+import numpy as np
+from scipy.stats import norm
 
-    if clipped_upper <= clipped_lower:
+
+def truncated_normal_mean(lower, upper, mu, sd):
+    """
+    E[X | lower <= X < upper] for X ~ Normal(mu, sd).
+    """
+    a = (lower - mu) / sd
+    b = (upper - mu) / sd
+
+    prob = norm.cdf(b) - norm.cdf(a)
+
+    if prob == 0:
         return np.nan
 
-    return 0.5 * (clipped_lower + clipped_upper)
+    return mu + sd * (norm.pdf(a) - norm.pdf(b)) / prob
+
+
+def truncated_bimodal_mean(lower, upper, prop, mu1, sd1, mu2, sd2):
+    """
+    E[X | lower <= X < upper] for 
+    X ~ prop * N(mu1, sd1) + (1 - prop) * N(mu2, sd2).
+    """
+
+    # Probability each component puts in the interval
+    p1 = norm.cdf(upper, loc=mu1, scale=sd1) - norm.cdf(lower, loc=mu1, scale=sd1)
+    p2 = norm.cdf(upper, loc=mu2, scale=sd2) - norm.cdf(lower, loc=mu2, scale=sd2)
+
+    # Mixture probability of falling in the interval
+    p_mix = prop * p1 + (1 - prop) * p2
+
+    if p_mix == 0:
+        return np.nan
+
+    # Component-specific truncated means
+    m1 = truncated_normal_mean(lower, upper, mu1, sd1)
+    m2 = truncated_normal_mean(lower, upper, mu2, sd2)
+
+    # Posterior mixture weights inside this interval
+    w1 = prop * p1 / p_mix
+    w2 = (1 - prop) * p2 / p_mix
+
+    return w1 * m1 + w2 * m2
 
 
 def save_pdf_png(fig, plot_dir, filename):
@@ -76,8 +117,21 @@ def save_pdf_png(fig, plot_dir, filename):
 
 ##### Combine individual DE-SWAN simulation result files
 files = sorted(
-    glob.glob(os.path.join(results_dir, f"de_swan_sim_*_n={config.N}_p={config.MOLS_NUM}.csv"))
+    glob.glob(
+        os.path.join(
+            results_dir,
+            f"de_swan_sim_*_n={config.N}_p={config.MOLS_NUM}.csv"
+        )
+    )
 )
+
+print(
+        os.path.join(
+            results_dir,
+            f"de_swan_sim_*_n={config.N}_p={config.MOLS_NUM}.csv"
+        )
+    )
+
 print(f"Found {len(files)} files")
 
 if len(files) == 0:
@@ -136,51 +190,97 @@ master_df["mean_n_sig"] = master_df[sim_cols].mean(axis=1)
 master_df["sd_n_sig"] = master_df[sim_cols].std(axis=1)
 
 
-##### Compute uniform-distribution diagnostics
+##### Compute bimodal-distribution diagnostics
 
 # Probability that age falls inside the full DE-SWAN window:
-# [midpoint - WINDOW, midpoint + WINDOW)
-master_df["uniform_window_prob"] = (
-    uniform.cdf(
-        master_df["midpoint"] + config.WINDOW / 2,
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+# [midpoint - WINDOW/2, midpoint + WINDOW/2]
+master_df["bimodal_window_prob"] = (
+    config.MIXTURE_PROP1 * (
+        norm.cdf(
+            master_df["midpoint"] + config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"] - config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
     )
-    -
-    uniform.cdf(
-        master_df["midpoint"] - config.WINDOW / 2,
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+    +
+    (1 - config.MIXTURE_PROP1) * (
+        norm.cdf(
+            master_df["midpoint"] + config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"] - config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
     )
 )
 
-# Young-half probability: [midpoint - WINDOW/2, midpoint)
 p_young = (
-    uniform.cdf(
-        master_df["midpoint"],
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+    config.MIXTURE_PROP1 * (
+        norm.cdf(
+            master_df["midpoint"],
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"] - config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
     )
-    -
-    uniform.cdf(
-        master_df["midpoint"] - config.WINDOW / 2,
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+    +
+    (1 - config.MIXTURE_PROP1) * (
+        norm.cdf(
+            master_df["midpoint"],
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"] - config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
     )
 )
 
-# Old-half probability: [midpoint, midpoint + WINDOW/2)
 p_old = (
-    uniform.cdf(
-        master_df["midpoint"] + config.WINDOW / 2,
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+    config.MIXTURE_PROP1 * (
+        norm.cdf(
+            master_df["midpoint"] + config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"],
+            loc=config.MIXTURE_MEAN1,
+            scale=config.MIXTURE_SD1
+        )
     )
-    -
-    uniform.cdf(
-        master_df["midpoint"],
-        loc=config.UNIF_LOWER,
-        scale=config.UNIF_UPPER - config.UNIF_LOWER
+    +
+    (1 - config.MIXTURE_PROP1) * (
+        norm.cdf(
+            master_df["midpoint"] + config.WINDOW / 2,
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
+        -
+        norm.cdf(
+            master_df["midpoint"],
+            loc=config.MIXTURE_MEAN2,
+            scale=config.MIXTURE_SD2
+        )
     )
 )
 
@@ -203,20 +303,26 @@ old_mean_age = []
 
 for midpt in master_df["midpoint"]:
     young_mean_age.append(
-        truncated_unif_mean(
+        truncated_bimodal_mean(
             lower=midpt - config.WINDOW / 2,
             upper=midpt,
-            a=config.UNIF_LOWER,
-            b=config.UNIF_UPPER
+            prop=config.MIXTURE_PROP1,
+            mu1=config.MIXTURE_MEAN1,
+            sd1=config.MIXTURE_SD1,
+            mu2=config.MIXTURE_MEAN2,
+            sd2=config.MIXTURE_SD2
         )
     )
 
     old_mean_age.append(
-        truncated_unif_mean(
+        truncated_bimodal_mean(
             lower=midpt,
             upper=midpt + config.WINDOW / 2,
-            a=config.UNIF_LOWER,
-            b=config.UNIF_UPPER
+            prop=config.MIXTURE_PROP1,
+            mu1=config.MIXTURE_MEAN1,
+            sd1=config.MIXTURE_SD1,
+            mu2=config.MIXTURE_MEAN2,
+            sd2=config.MIXTURE_SD2
         )
     )
 
@@ -239,6 +345,7 @@ print(master_df.head())
 fig, ax = plt.subplots(figsize=(fig_width, fig_height))
 # Plotting-only filter: remove first edge artifact but keep master_df unchanged
 plot_df = master_df[master_df["midpoint"] > config.MIN_AGE].copy()
+
 for col in sim_cols:
     ax.plot(
         plot_df["midpoint"],
@@ -274,17 +381,25 @@ save_pdf_png(fig, plot_dir, "de_swan_all_curves_with_mean")
 plt.show()
 
 
-##### Plot 2: mean DE-SWAN curve overlaid with uniform age density
+##### Plot 2: mean DE-SWAN curve overlaid with bimodal age density
 x_age = np.linspace(
     plot_df["midpoint"].min(),
     plot_df["midpoint"].max(),
     500
 )
 
-uniform_density = uniform.pdf(
-    x_age,
-    loc=config.UNIF_LOWER,
-    scale=config.UNIF_UPPER - config.UNIF_LOWER
+bimodal_density = (
+    config.MIXTURE_PROP1 * norm.pdf(
+        x_age,
+        loc=config.MIXTURE_MEAN1,
+        scale=config.MIXTURE_SD1
+    )
+    +
+    (1 - config.MIXTURE_PROP1) * norm.pdf(
+        x_age,
+        loc=config.MIXTURE_MEAN2,
+        scale=config.MIXTURE_SD2
+    )
 )
 
 fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
@@ -314,7 +429,7 @@ ax2 = ax1.twinx()
 
 ax2.plot(
     x_age,
-    uniform_density,
+    bimodal_density,
     linestyle="--",
     linewidth=1.8,
     label=rf"Age density"
@@ -324,53 +439,6 @@ ax2.set_ylabel("Age density")
 ax2.tick_params(axis="both", width=0.8, length=3)
 
 ax1.set_title("DE-SWAN hits overlaid with simulated age density")
-
-lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-
-fig.tight_layout()
-save_pdf_png(fig, plot_dir, "de_swan_mean_with_uniform_density")
-plt.show()
-
-
-##### Plot 4: mean DE-SWAN curve overlaid with uniform probability mass in each sliding window
-fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
-
-ax1.plot(
-    plot_df["midpoint"],
-    plot_df["mean_n_sig"],
-    linewidth=2.2,
-    label="Mean DE-SWAN hits"
-)
-
-ax1.fill_between(
-    plot_df["midpoint"],
-    plot_df["mean_n_sig"] - plot_df["sd_n_sig"],
-    plot_df["mean_n_sig"] + plot_df["sd_n_sig"],
-    alpha=0.18,
-    label="Mean ± 1 SD"
-)
-
-ax1.set_xlabel("Age midpoint")
-ax1.set_xlim(x_lower, x_upper)
-ax1.set_ylabel("Significant molecules")
-ax1.set_ylim(y_lower, y_upper)
-ax1.tick_params(axis="both", width=0.8, length=3)
-
-ax2 = ax1.twinx()
-
-ax2.plot(
-    plot_df["midpoint"],
-    plot_df["uniform_window_prob"],
-    linestyle="--",
-    linewidth=1.8,
-    label=rf"$P(a \in [m-{config.WINDOW}/2, m+{config.WINDOW}/2])$"
-)
-
-ax2.set_ylabel("Probability in sliding window")
-ax2.tick_params(axis="both", width=0.8, length=3)
-
-ax1.set_title("DE-SWAN hits overlaid with age-window probability")
 
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
@@ -386,7 +454,54 @@ lines2, labels2 = ax2.get_legend_handles_labels()
 # )
 
 fig.tight_layout()
-save_pdf_png(fig, plot_dir, "de_swan_mean_with_uniform_window_probability")
+save_pdf_png(fig, plot_dir, "de_swan_mean_with_bimodal_density")
+plt.show()
+
+
+##### Plot 4: mean DE-SWAN curve overlaid with bimodal probability mass in each sliding window
+fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
+
+ax1.plot(
+    plot_df["midpoint"],
+    plot_df["mean_n_sig"],
+    linewidth=2.2,
+    label="Mean DE-SWAN hits"
+)
+
+ax1.fill_between(
+    plot_df["midpoint"],
+    plot_df["mean_n_sig"] - plot_df["sd_n_sig"],
+    plot_df["mean_n_sig"] + plot_df["sd_n_sig"],
+    alpha=0.18,
+    label="Mean ± 1 SD"
+)
+
+ax1.set_xlabel("Age midpoint")
+ax1.set_xlim(x_lower, x_upper)
+ax1.set_ylabel("Significant molecules")
+ax1.set_ylim(y_lower, y_upper)
+ax1.tick_params(axis="both", width=0.8, length=3)
+
+ax2 = ax1.twinx()
+
+ax2.plot(
+    plot_df["midpoint"],
+    plot_df["bimodal_window_prob"],
+    linestyle="--",
+    linewidth=1.8,
+    label=rf"$P(a \in [m-{config.WINDOW}/2, m+{config.WINDOW}/2])$"
+)
+
+ax2.set_ylabel("Probability in sliding window")
+ax2.tick_params(axis="both", width=0.8, length=3)
+
+ax1.set_title("DE-SWAN hits overlaid with age-window probability")
+
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+
+fig.tight_layout()
+save_pdf_png(fig, plot_dir, "de_swan_mean_with_bimodal_window_probability")
 plt.show()
 
 
@@ -432,19 +547,10 @@ ax1.set_title("DE-SWAN hits overlaid with expected window sample count")
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 
-# ax1.legend(
-#     lines1 + lines2,
-#     labels1 + labels2,
-#     loc="upper right",
-#     frameon=False,
-#     fontsize=7,
-#     handlelength=1.6,
-#     borderaxespad=0.3
-# )
-
 fig.tight_layout()
 save_pdf_png(fig, plot_dir, "de_swan_mean_with_expected_window_count")
 plt.show()
+
 
 ##### Plot 6: mean DE-SWAN curve overlaid with expected sample count per window
 fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
@@ -478,9 +584,9 @@ ax2.plot(
     plot_df["expected_n_young"],
     plot_df["expected_n_old"]),
     linestyle="--",
-    linewidth=1.8,
-    label="Expected samples in smallest group (young vs. old)"
+    linewidth=1.8
 )
+
 ax2.set_ylabel("Expected samples in smallest group (young/old)")
 ax2.tick_params(axis="both", width=0.8, length=3)
 
@@ -493,3 +599,5 @@ ax1.set_title("DE-SWAN hits with expected smallest group count")
 fig.tight_layout()
 save_pdf_png(fig, plot_dir, "de_swan_mean_with_smallest_expected_count")
 plt.show()
+
+
