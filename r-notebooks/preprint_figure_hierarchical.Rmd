@@ -1,0 +1,221 @@
+---
+title: "Artifactual Waves of Aging: Hierarchical Clustering"
+author: "Kate Shutta"
+date: "2026-06-10"
+output: html_document
+---
+
+# Libraries and packages
+
+Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
+
+```{R}
+source("../utils/loess_utils.R")
+```
+
+Load other libraries.
+
+```{R}
+library(cluster)
+library(dplyr)
+library(gplots)
+library(ggplot2)
+library(patchwork)
+```
+
+```{R}
+set.seed(1989)
+uniform_ages = runif(n=200,min=21,max=70)
+gaussian_ages = rnorm(n=200,mean=50, sd=8)
+gaussian_mixture_ages = c(rnorm(n=100,35,6),rnorm(n=100,65,6))
+ipop_data = read.csv("../ext/transcriptomics_sample_info.csv")
+ipop_ages = ipop_data$adjusted_age
+```
+
+# Heatmaps of raw and smoothed null data
+
+Generate omics data.
+
+```{R}
+set.seed(1213)
+uniform_data = generateOmics(uniform_ages, 
+                             npred=1000, 
+                             distribution="standard_normal")
+gaussian_data = generateOmics(gaussian_ages, 
+                              npred=1000,
+                              distribution="standard_normal")
+gaussian_mixture_data = generateOmics(gaussian_mixture_ages, 
+                                      npred=1000,
+                                distribution="standard_normal")
+ipop_data = generateOmics(ipop_ages, 
+                          npred=1000, 
+                          distribution="standard_normal")
+```
+
+Function to make heatmaps.
+
+```{R}
+makeHeatmaps = function(data,dist,main_title ="")
+{
+  heatmap.2(as.matrix(t(data[[1]][,-1])),
+            trace="none",
+            Rowv=T,
+            Colv=F,
+            col="redblue",
+            labCol =NA, #round(data[[1]]$ages,2),
+            labRow = NA)
+    title(main_title, line = -3, cex.main=3, adj=0.65)
+
+  heatmap.2(as.matrix(t(data[[2]][,-1])),
+            trace="none",
+            Rowv=T,
+            Colv=F,
+            col="redblue",
+            labCol = NA, #round(data[[2]]$ages,2),
+            labRow = NA)
+  title(main_title, line = -3, cex.main=3, adj=0.65)
+}
+```
+
+Make the heatmaps.
+
+```{R}
+makeHeatmaps(data = uniform_data, dist = "uniform", main_title = "Uniform")
+makeHeatmaps(data = gaussian_data, dist = "gaussian", main_title = "Gaussian")
+makeHeatmaps(data = gaussian_mixture_data, dist = "gaussian_mixture", main_title = "Gaussian Mixture")
+makeHeatmaps(data = ipop_data, dist = "ipop", main_title = "iPOP")
+```
+
+# Age density plots
+
+Add the bottom row, which shows the age densities.
+
+```{R}
+p1 = ggplot(data = data.frame("age"=uniform_ages), 
+       aes(x=age)) + 
+  geom_histogram(aes(y=..density..),color="black",fill="white") +
+  ggtitle("Uniform") + 
+  theme_minimal() +
+  ylim(0,0.055) +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p2 = ggplot(data = data.frame("age"=gaussian_ages), 
+       aes(x=age)) + 
+  geom_histogram(aes(y=..density..),color="black",fill="white") +
+  ggtitle("Gaussian") + 
+  theme_minimal() +
+    ylim(0,0.055) +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p3 = ggplot(data = data.frame("age"=gaussian_mixture_ages), 
+       aes(x=age)) + 
+  geom_histogram(aes(y=..density..),color="black",fill="white") +
+  ggtitle("Gaussian Mixture") + 
+  theme_minimal() +
+    ylim(0,0.055) +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p4 = ggplot(data = data.frame("age"=ipop_ages), 
+       aes(x=age)) + 
+  geom_histogram(aes(y=..density..),color="black",fill="white") +
+  ggtitle("iPOP") + 
+  theme_minimal() +
+    ylim(0,0.055) +
+  theme(axis.title = element_text(size = 15),
+        plot.title = element_text(size = 20, hjust = 0.5))
+
+p1 + p2 + p3 + p4
+```
+
+# Cluster trajectories
+
+Function for plotting cluster trajectories.
+
+```{R}
+plot_clusters = function(loessed_df, k)
+{
+  clust_df = t(loessed_df[,-1])
+  df_hclust = hclust(dist(clust_df),method="complete")
+  clusters = cutree(df_hclust,k=k)
+  for(i in 1:k)
+  {
+    cluster_data = loessed_df[,-1][,which(clusters == i)]
+    centroid = apply(cluster_data,1,mean)
+    plot(loessed_df$ages, centroid,ylim=c(-2,2),
+          xlab = "age", ylab = "molecule level",
+         type="l")
+    title(paste0("n = ", ncol(cluster_data)), line=-2)
+    for(j in 1:ncol(cluster_data))
+    {
+      lines(loessed_df$ages, cluster_data[,j],lwd=0.3,col="grey")
+    }
+    lines(loessed_df$ages, centroid,ylim=c(-2,2),
+          lwd=3,col=rainbow(k)[i])
+  }
+}
+```
+
+Plot trajectories for all four of the age distributions.
+
+```{R}
+par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = uniform_data[[2]],
+              k=6)
+mtext("Uniform Age Distribution",outer=T, line=0, cex = 1.25)
+
+par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_mixture_data[[2]],
+              k=6)
+mtext("Gaussian Age Distribution",outer=T, line=0, cex = 1.25)
+
+par(mfrow = c(3,4),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_mixture_data[[2]],
+              k=12)
+mtext("Gaussian Mixture Age Distribution",outer=T, line=0, cex = 1.25)
+
+par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = ipop_data[[2]],
+              k=6)
+mtext("iPOP Age Distribution",outer=T, line=0, cex = 1.25)
+
+```
+
+Effect of increasing the number of clusters (Supplementary Figure)
+
+```{R}
+par(mfrow = c(1,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_data[[2]],
+              k=2)
+mtext("Gaussian Age Distribution, k=2",outer=T, line=0, cex = 1.25)
+
+par(mfrow = c(1,4),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_data[[2]],
+              k=4)
+mtext("Gaussian Age Distribution, k=4",outer=T, line=0, cex = 1.25)
+
+par(mfrow = c(1,6),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_data[[2]],
+              k=6)
+
+```
+
+# Silhouette scores
+
+For the example of the Gaussian data, calculate silhouette scores to demonstrate one method for selecting the number of clusters. Note: the R package NbClust offers a more comprehensive set of tools for doing this. 
+
+```{R}
+clust_df = t(gaussian_data[[2]][,-1])
+df_hclust = hclust(dist(clust_df),method="complete")
+
+sil_scores = list()
+for(i in 2:7)
+  sil_scores[[i]] = silhouette(x=cutree(df_hclust,k=i),
+           dist = dist(clust_df))
+
+plot(c(2:7),sapply(sil_scores[2:7],function(x){mean(x[,3])}),
+     pch = 20,
+     ylab = "silhouette scores", xlab = "n clusters", main = "Silhouette Scores: Gaussian Data")
+```

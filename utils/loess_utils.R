@@ -241,7 +241,6 @@ test_age_dist = function(my_ages,npred, bucket,
   return(list(res,res_loess,opt_spans))
 }
 
-
 get_profile = function(x, id)
 {
   x %>%
@@ -322,5 +321,39 @@ loess_matrix = function(my_ages, my_responses, optimize_loess=F){
   
   loessed_data = Reduce(rbind.data.frame, loessed_data)
   return(list("lattice_ages"=loess_lattice$x,"response"=loessed_data))
+}
+
+generateOmics = function(ages, npred, distribution, optimize_loess=F)
+{
+  if(distribution == "uniform")
+    my_responses = matrix(runif(n=length(ages)*npred),nrow=length(ages))
+  if(distribution == "standard_normal")
+    my_responses = matrix(rnorm(n=length(ages)*npred, mean=0,sd=1),nrow=length(ages))
+  if(distribution == "linear_age")
+  {
+    # make each output variable as a
+    # linear function of age
+    my_responses = matrix(rep(NA,length(ages)*npred),nrow=length(ages))
+    for(j in 1:npred)
+    {
+      my_responses[,j] = ages + rnorm(n=length(ages),0,1)
+    }
+  }
+  my_responses = data.frame(my_responses)
+  my_responses$ages = ages
+  my_responses = my_responses %>%
+    relocate(ages) %>%
+    arrange(ages)
+  
+  loessed_data = loess_matrix(my_responses$ages,
+                              my_responses = t(my_responses[,-1]),
+                              optimize_loess = optimize_loess)
+  
+  loessed_df = data.frame(t(loessed_data$response),row.names =NULL) %>%
+    mutate(ages = loessed_data$lattice_ages) %>%
+    relocate(ages) %>%
+    arrange(ages)
+  
+  return(list("data"=my_responses,"loessed_df"=loessed_df))
 }
 
