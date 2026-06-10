@@ -10,7 +10,7 @@ output: html_document
 Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
 
 ```{R}
-source("../null_simulations/loess_utils.R")
+source("../utils/loess_utils.R")
 ```
 
 Load libraries.
@@ -21,6 +21,7 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(gridExtra)
+library(patchwork)
 ```
 
 # Figure 2
@@ -280,11 +281,29 @@ q5
 Save plots.
 
 ```{R}
-layout_matrix = matrix(c(1, 2, 3),nrow=1)
-qplot1 = arrangeGrob(q1, q8, q7,
-                    layout_matrix = layout_matrix)
-qplot2 = arrangeGrob(q3, q6, q5,
-                    layout_matrix = layout_matrix)
-ggsave(qplot1,file="loess_de_swan_figure_b.jpeg",width=10,height=3.5,dpi=300)
-ggsave(qplot2,file="loess_de_swan_figure_c.jpeg",width=10,height=3.5,dpi=300)
+#layout_matrix = matrix(c(1, 2, 3),nrow=1)
+#qplot1 = arrangeGrob(q1, q8, q7,
+                    #layout_matrix = layout_matrix)
+#qplot2 = arrangeGrob(q3, q6, q5,
+#                    layout_matrix = layout_matrix)
+
+(q1 + q8 + q7) / (q3 + q6 + q5)
+```
+
+Plot the age distribution next to significance for inspection in D.
+
+```{R}
+p0 = df %>% ggplot(aes(x=ages)) + 
+  geom_histogram(color="black",fill="white") +
+  theme_minimal()
+p5 = de_swan_res %>%
+  ggplot(aes(x=center,y=-log10(p_value_adjust))) + 
+  geom_line(color="black") +
+  geom_hline(yintercept =-log10(0.05),color="grey",linetype="dashed") + 
+  geom_point(size=3) +
+  xlab("window center") + 
+  ylab("-log10(FDR)") +
+  xlim(min(ages),max(ages)) + 
+  theme_minimal()
+p0 + p5
 ```
