@@ -21,10 +21,11 @@ pip install -r requirements.txt
 
 Code for the DE-SWAN simulations can be found in `simulations/DE-SWAN`. In each folder within `DE-SWAN`, there are different folders containing code that modulates different aspects of the DGP: 
 
-* `uniform_dist`: Sets age distribution to be uniform (Figure XX: Row 1)
-* `normal_dist`: Sets age distribution to be normal (Figure XX: Row 2)
-* `bimodal_dist`: Sets age distribution to be bimodal (specification 1) (Figure XX: Row 3)
-* `bimodal_2_dist`: Sets age distribution to be bimodal (specification 2) (Figure XX: Row 4)
+* `uniform_dist`: Sets age distribution to be uniform (Figure 8: Row 1)
+* `normal_dist`: Sets age distribution to be normal (Figure 8: Row 2)
+* `bimodal_dist`: Sets age distribution to be bimodal (specification 1) (Figure 8: Row 3)
+* `bimodal_2_dist`: Sets age distribution to be bimodal (specification 2) (Figure 8: Row 4)
+* `middle_var`: Sets noise to increase and then decrease (Figure 10: Row 1)
 * MC TO-DO: Fill in the rest of these
 
 Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. `simulations/DE-SWAN/de_SWAN_helpers.py` contains helper functions used by all simulation settings.

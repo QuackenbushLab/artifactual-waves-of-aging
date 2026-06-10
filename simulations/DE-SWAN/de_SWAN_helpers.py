@@ -14,8 +14,8 @@ def run_de_SWAN(window, age_col, exp_data, min_age=40, max_age=65, wilcoxon=Fals
     Simple DE-SWAN-style sliding window test.
 
     For each whole-number midpoint:
-        young group: [midpt - window, midpt)
-        old group:   [midpt, midpt + window)
+        young group: [midpt - window/2, midpt)
+        old group:   [midpt, midpt + window/2)
 
     For each molecule:
         expression ~ age_group + optional covariates
@@ -436,12 +436,6 @@ def generate_exp_data(
         elif noise_shape == "u":
             # Smooth U-shape
             shape = age_dist_from_mid ** noise_power
-
-        elif noise_shape == "laplace_u":
-            # Exponential/Laplace-like U-shape:
-            # low in middle, high at ends, nonlinear rise toward edges
-            shape = 1 - np.exp(-laplace_decay * age_dist_from_mid)
-            shape = shape / shape.max()
 
         else:
             raise ValueError(f"Unknown noise_shape: {noise_shape}")
