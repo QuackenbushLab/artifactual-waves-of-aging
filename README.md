@@ -27,15 +27,25 @@ Code for the DE-SWAN simulations can be found in `simulations/DE-SWAN`. In each 
 * `bimodal_2_dist`: Sets age distribution to be bimodal (specification 2) (Figure XX: Row 4)
 * MC TO-DO: Fill in the rest of these
 
-Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. To run one simulation, navigate to the root folder (`artifactual-waves-of-aging`) and use
+Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. `simulations/DE-SWAN/de_SWAN_helpers.py` contains helper functions used by all simulation settings.
 
+In general, simulations should be run according to the following procedure:
+1. Set paramters including the results directory. Recommended format is `"simulations/DE-SWAN/bimodal_2_dist/results/results_{DATE}"`
+2. Visualize the data generated with those parameters using 
 ```python
-simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}
+python simulations/DE-SWAN/bimodal_2_dist/plot_sample_exp.py
 ```
-
-where `{SIM_NUM}` is some integer value indexing the simulation. To run multiple simulations, calling this script can be looped. For large simulations, we recommend using external computing resources. 
-
-`simulations/DE-SWAN/de_SWAN_helpers.py` contains helper functions used by all simulation settings.
+3. Run one simulation. From the root folder (`artifactual-waves-of-aging`) and run 
+```python
+python simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}
+```
+where `{SIM_NUM}` is some integer value indexing the simulation. 
+4. Run multiple simulations, by looping through the script in 3. For large simulations (>15), we recommend using external computing resources. 
+5. Visualize results by running 
+```python
+python simulations/DE-SWAN/bimodal_2_dist/summarize_de_swan.py
+```
+Note that, depending on parameters, parameters such as `y_lower`,`y_upper`, `x_lower`, `x_upper`, `fig_width`, and `fig_height` might need to be changed.
 
 
   
