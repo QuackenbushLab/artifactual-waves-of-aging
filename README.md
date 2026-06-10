@@ -32,11 +32,11 @@ Within each folder, there is a configuration file with parameters for each simul
 In general, simulations should be run according to the following procedure:
 1. Set paramters including the results directory. Recommended format is `"simulations/DE-SWAN/bimodal_2_dist/results/results_{DATE}"`
 2. Visualize the data generated with those parameters using 
-```python
+```bash
 python simulations/DE-SWAN/bimodal_2_dist/plot_sample_exp.py
 ```
 3. Run one simulation. From the root folder (`artifactual-waves-of-aging`) and run 
-```python
+```bash
 python simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}
 ```
 where `{SIM_NUM}` is some integer value indexing the simulation. 
@@ -44,7 +44,7 @@ where `{SIM_NUM}` is some integer value indexing the simulation.
 4. Run multiple simulations, by looping through the script in 3. For large simulations (>15), we recommend using external computing resources. 
 
 5. Visualize results by running 
-```python
+```bash
 python simulations/DE-SWAN/bimodal_2_dist/summarize_de_swan.py
 ```
 Note that, depending on parameters, parameters such as `y_lower`,`y_upper`, `x_lower`, `x_upper`, `fig_width`, and `fig_height` might need to be changed.
