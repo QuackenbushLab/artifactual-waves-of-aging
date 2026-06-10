@@ -40,7 +40,9 @@ python simulations/DE-SWAN/bimodal_2_dist/plot_sample_exp.py
 python simulations/DE-SWAN/normal_dist/run_one_sim.py {SIM_NUM}
 ```
 where `{SIM_NUM}` is some integer value indexing the simulation. 
+
 4. Run multiple simulations, by looping through the script in 3. For large simulations (>15), we recommend using external computing resources. 
+
 5. Visualize results by running 
 ```python
 python simulations/DE-SWAN/bimodal_2_dist/summarize_de_swan.py
