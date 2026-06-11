@@ -8,7 +8,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PROJECT_ROOT)
 
 from de_SWAN_helpers import generate_exp_data
-import normal_dist_configs as config
+import exp_dec_configs as config
 
 
 def main():
@@ -25,9 +25,12 @@ def main():
         noise_sd=config.NOISE_SD,
         dist=config.DIST,
         noise_trend=config.NOISE_TREND,
-        norm_mean=config.NORM_MEAN,
-        norm_sd=config.NORM_SD
-    )
+        unif_lower=config.UNIF_LOWER,
+        unif_upper=config.UNIF_UPPER,
+        min_noise_multiplier=config.MIN_NOISE_MULTIPLIER,
+        max_noise_multiplier=config.MAX_NOISE_MULTIPLIER    
+        )
+
 
     plt.rcParams.update({
         "font.family": "serif",

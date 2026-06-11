@@ -1,6 +1,6 @@
 N = 1000
 MOLS_NUM = 2000
-N_SIMS = 100
+N_SIMS = 10
 
 WINDOW = 20
 MIN_AGE = 25
@@ -14,10 +14,9 @@ UNIF_LOWER = 25
 UNIF_UPPER = 75
 
 DIST = "unif"
-NOISE_TREND = "exp_increasing"
+NOISE_TREND = "exp_decreasing"
 EXP_STRENGTH = 10.0
-MIN_NOISE_MULTIPLIER = 2.0
-MAX_NOISE_MULTIPLIER = 8.0
+MIN_NOISE_MULTIPLIER = 0.25
+MAX_NOISE_MULTIPLIER = 6.0
 
-
-RESULTS_DIR = "simulations/DE-SWAN/exp_inc/results/results_06-10-26"
+RESULTS_DIR = "simulations/DE-SWAN/exp_dec/results/results_06-10-26"

@@ -4,35 +4,29 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from datetime import datetime
 import glob
 import re
 from functools import reduce
 
 import pandas as pd
-
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(PROJECT_ROOT)
 
 from de_SWAN_helpers import generate_exp_data, run_all_de_swan
-import mild_configs as config
+import outlier_configs as config
 
 # Generate data
-date_time_str = datetime.now().strftime("%m-%d-%y_%H-%M")
-
-outdir = os.path.join(PROJECT_ROOT, "outliers", "mild", "results", "data_frames",f"results_{date_time_str}")
-os.makedirs(outdir, exist_ok=True)
-
-# generate one pull from the uniform distribution to determine outlier locations, but keep the same outliers across all simulations for outlier consistency
-X = np.random.uniform(config.MIN_AGE, config.MAX_AGE, size=config.N)
-
-n_outliers = config.N_OUTLIERS  # 5% of samples as outliers
-age_center = np.median(X)
-
-center_order = np.argsort(np.abs(X - age_center))
-outlier_inds = center_order[:n_outliers]
+os.makedirs(config.OUTDIR, exist_ok=True)
 
 for sim in range(config.N_SIMS):
+
+    X = np.random.uniform(config.MIN_AGE, config.MAX_AGE, size=config.N)
+
+    n_outliers = config.N_OUTLIERS  # 5% of samples as outliers
+    age_center = np.median(X)
+
+    center_order = np.argsort(np.abs(X - age_center))
+    outlier_inds = center_order[:n_outliers]
 
     exp_df = generate_exp_data(
         n=config.N,
@@ -45,8 +39,8 @@ for sim in range(config.N_SIMS):
         unif_lower = config.MIN_AGE,
         unif_upper = config.MAX_AGE,
         outlier_multiplier=config.OUTLIER_MULTIPLIER,
-        fixed_x=X,
-        outlier_inds=outlier_inds
+        outlier_inds=outlier_inds,
+        fixed_x = X,
         )
 
     # Optional: save example molecule plot only for sim 0
@@ -110,11 +104,9 @@ for sim in range(config.N_SIMS):
         fig.tight_layout(pad=0.35, w_pad=0.35, h_pad=0.35)
 
         fig.savefig(
-            os.path.join(outdir, "random_6_molecules_2x3.pdf"),
+            os.path.join(config.OUTDIR, "random_6_molecules_2x3.pdf"),
             bbox_inches="tight"
         )
-        # plt.show()
-        # plt.close(fig)
 
     # Run DE-SWAN
     de_swan_df = run_all_de_swan(
@@ -130,7 +122,7 @@ for sim in range(config.N_SIMS):
     de_swan_df = de_swan_df[["midpoint", "n_sig"]].copy()
     de_swan_df = de_swan_df.rename(columns={"n_sig": f"sim_{sim}_n_sig"})
 
-    out_file = os.path.join(outdir, f"de_swan_sim_{sim}_n={config.N}_p={config.MOLS_NUM}.csv")
+    out_file = os.path.join(config.OUTDIR, f"de_swan_sim_{sim}_n={config.N}_p={config.MOLS_NUM}.csv")
     de_swan_df.to_csv(out_file, index=False)
 
     print(f"Finished simulation {sim}. Saved to {out_file}")
@@ -138,12 +130,12 @@ for sim in range(config.N_SIMS):
 
 ##### Combine individual DE-SWAN simulation result files
 files = sorted(
-    glob.glob(os.path.join(outdir, f"de_swan_sim_*_n={config.N}_p={config.MOLS_NUM}.csv"))
+    glob.glob(os.path.join(config.OUTDIR, f"de_swan_sim_*_n={config.N}_p={config.MOLS_NUM}.csv"))
 )
 print(f"Found {len(files)} files")
 
 if len(files) == 0:
-    raise ValueError(f"No files found in {outdir}")
+    raise ValueError(f"No files found in {config.OUTDIR}")
 
 dfs = []
 
@@ -197,8 +189,6 @@ sim_cols = [
 master_df["mean_n_sig"] = master_df[sim_cols].mean(axis=1)
 master_df["sd_n_sig"] = master_df[sim_cols].std(axis=1)
 
-print(X[outlier_inds])
-
-combined_rslts = os.path.join(outdir, f"de_swan_n={config.N}_p={config.MOLS_NUM}.csv")
+combined_rslts = os.path.join(config.OUTDIR, f"de_swan_n={config.N}_p={config.MOLS_NUM}.csv")
 master_df.to_csv(combined_rslts, index=False)
 
