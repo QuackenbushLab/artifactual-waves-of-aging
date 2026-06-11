@@ -2,20 +2,26 @@
 
 This repository contains code supporting _Artifactual "waves" of molecular aging arise when coupling LOESS with DE-SWAN_. 
 
-<!-- ## USE: 
-``` 
+<!-- ``` bash
 git clone ___
-cd ___
+cd artifactual-waves-of-aging
 virtualenv venv to create your new environment (called 'venv' here)
 source venv/bin/activate to enter the virtual environment
 pip install -r requirements.txt 
-```  -->
-
+``` -->
 ## Contents
 
 + `r-notebooks` contains the scripts for Section 3: "Simulation example on a single gene", Section 4: "4	Waves of aging appear in null data and depend on the age distribution", and Figures 2, 3, and 4.
 + `ipop-data-analysis` contains the scripts for Section 5: "DE-SWAN alone does not detect 'waves of aging' in the iPOP data", Section 6: "Use of permutation testing to validate the procedure", and Figures 5, 6, and 7.
 + `utils` provides supporting utility functions for `r-notebooks`.
++ `simulations/DE-SWAN` contains code for DE-SWAN simulations shown in section XXX
+
+### iPOP Data Analysis
+
+Replication of the transcriptomic analysis in _Nonlinear dynamics of multi-omics profiles during human aging_ can be found in the Jupyter Notebooks here (`ipop_data_analysis/transcriptomics_replication.ipynb`). Instructions for downloading data and reproducing the analysis can be found in the notebook itself. When downloaded, data should be stored in `ipop_data_analysis/nonlinear_aging_data`. Due to the amount of time permutation testing can take, previous results have been stored in `ipop_data_analysis/permutation_rslts`. Lastly, `ipop_data_analysis/loess.R` contains code from the original analysis [repository](https://github.com/jaspershen-lab/ipop_aging) to streamline reproducability.
+
+We have additionally included the the proteomic pipeline (`ipop_data_analysis/proteomics_replication.ipynb`).
+
 
 ### DE-SWAN Simulations
 
@@ -26,6 +32,7 @@ Code for the DE-SWAN simulations can be found in `simulations/DE-SWAN`. In each 
 * `bimodal_dist`: Sets age distribution to be bimodal (specification 1) (Figure 8: Row 3)
 * `bimodal_2_dist`: Sets age distribution to be bimodal (specification 2) (Figure 8: Row 4)
 * `middle_var`: Sets noise to increase and then decrease (Figure 10: Row 1)
+* `ends_var`: Sets noise to decrease towards the center of the distribution and then increase (Figure 10: Row 2)
 * MC TO-DO: Fill in the rest of these
 
 Within each folder, there is a configuration file with parameters for each simulation setting (`XXX_configs.py`), a python executable file for one simulation (`run_one_sim.py`), and two visualization files: `summarize_de_swan.py` and `plot_sample_exp.py`. `summarize_de_swan.py` plots DE-SWAN cuves and additional analysis and `plot_sample_exp.py` shows 6 examples of molecular expression data that are simulated by the parameters. `simulations/DE-SWAN/de_SWAN_helpers.py` contains helper functions used by all simulation settings.
