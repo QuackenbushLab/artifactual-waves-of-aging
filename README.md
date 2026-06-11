@@ -51,7 +51,7 @@ pip install -r requirements.txt
 
 ### iPOP Data Analysis
 
-Replication of the transcriptomic analysis in _Nonlinear dynamics of multi-omics profiles during human aging_ can be found in the Jupyter Notebooks here (`ipop_data_analysis/transcriptomics_replication.ipynb`). Instructions for downloading data and reproducing the analysis can be found in the notebook itself. When downloaded, data should be stored in `ipop_data_analysis/nonlinear_aging_data`. Due to the amount of time permutation testing can take, previous results have been stored in `ipop_data_analysis/permutation_rslts`. Lastly, `ipop_data_analysis/loess.R` contains code from the original analysis [repository](https://github.com/jaspershen-lab/ipop_aging) to streamline reproducability.
+Replication of the transcriptomic analysis in _Nonlinear dynamics of multi-omics profiles during human aging_ can be found in the Jupyter Notebooks here (`ipop_data_analysis/transcriptomics_replication.ipynb`). Instructions for downloading data and reproducing the analysis can be found in the notebook itself. When downloaded, data should be stored in `ipop_data_analysis/nonlinear_aging_data`. Due to the amount of time permutation testing can take, previous results have been stored in `ipop_data_analysis/permutation_rslts`. Lastly, `ipop_data_analysis/loess.R` contains code from the original analysis [repository](https://github.com/jaspershen-lab/ipop_aging) to run LOESS-fitting.
 
 We have additionally included the the proteomic pipeline (`ipop_data_analysis/proteomics_replication.ipynb`).
 
