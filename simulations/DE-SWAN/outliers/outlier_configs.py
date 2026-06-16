@@ -7,7 +7,7 @@ sys.path.append(PROJECT_ROOT)
 
 N = 200 # number of samples
 MOLS_NUM = 1500 # number of molecules (features)
-N_SIMS = 5 # number of simulations
+N_SIMS = 50 # number of simulations
 
 WINDOW = 20 # DE-SWAN window (younger = [midpoint - WINDOW/2, midpoint], older = [midpoint, midpoint + WINDOW/2])
 MIN_AGE = 25 # midpoint age at which to start DE-SWAN algorithm
