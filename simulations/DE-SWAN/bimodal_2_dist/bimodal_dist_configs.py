@@ -1,24 +1,25 @@
-N = 1000
-MOLS_NUM = 2000
-N_SIMS = 100
+N = 1000 # number of samples
+MOLS_NUM = 2000 # number of molecules (features)
+N_SIMS = 100 # Note: to run N_SIMS simulations, run run_one_sim.py script N_SIMS times with sim number as an argument 
+             # (e.g. python run_one_sim.py 1, python run_one_sim.py 2, etc.)
 
-WINDOW = 10
-MIN_AGE = 25
-MAX_AGE = 75
+WINDOW = 10 # DE-SWAN window (younger = [midpoint - WINDOW/2, midpoint], older = [midpoint, midpoint + WINDOW/2])
+MIN_AGE = 25 # midpoint age at which to start DE-SWAN algorithm
+MAX_AGE = 75 # midpoint age at which to stop DE-SWAN algorithm
 
-TRUE_SLOPE_SD = 0.1
-TRUE_INTERCEPT_SD = 0.1
-NOISE_SD = 0.85
+TRUE_SLOPE_SD = 0.1 # Standard Deviation of true slope values across molecules 
+TRUE_INTERCEPT_SD = 0.1 # Standard Deviation of true intercept values across molecules 
+NOISE_SD = 0.85 # Standard Deviation of noise term
 
-MIXTURE_MEAN1 = 37
-MIXTURE_SD1 = 4
+MIXTURE_MEAN1 = 34 # mean of first normal distribution in bimodal mixture
+MIXTURE_SD1 = 4 # standard deviation of first normal distribution in bimodal mixture
 
-MIXTURE_MEAN2 = 60
-MIXTURE_SD2 = 5
+MIXTURE_MEAN2 = 64 # mean of second normal distribution in bimodal mixture
+MIXTURE_SD2 = 5 # standard deviation of second normal distribution in bimodal mixture
 
-MIXTURE_PROP1 = 0.4
+MIXTURE_PROP1 = 0.4 # weight of first distribution
 
-DIST = "bimodal"
-NOISE_TREND = None
+DIST = "bimodal" # distribution specification 
+NOISE_TREND = None # keep variance constant
 
-RESULTS_DIR = "simulations/DE-SWAN/bimodal_2_dist/results/results_06-10-26"
+RESULTS_DIR = "simulations/DE-SWAN/bimodal_2_dist/results/results_06-10-26" # folder for result

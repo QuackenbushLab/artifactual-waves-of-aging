@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PROJECT_ROOT)
 
-from de_SWAN_helpers import generate_exp_data, run_all_de_swan
+from de_SWAN_helpers import generate_exp_data
 import middle_var_configs as config
 
 

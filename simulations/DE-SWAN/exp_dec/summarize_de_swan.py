@@ -26,7 +26,8 @@ os.makedirs(plot_dir, exist_ok=True)
 y_lower = 200
 y_upper = 1200
 x_lower = config.MIN_AGE + 3
-x_upper = config.MAX_AGE - 3
+# x_upper = config.MAX_AGE - 3
+x_upper = None
 fig_width = 5.0
 fig_height = 4
 

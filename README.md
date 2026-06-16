@@ -98,6 +98,11 @@ In the case of the outliers simulation, all simulations can be run together as t
 python simulations/DE-SWAN/outliers/run_all_sims.py
 ```
 
+The outliers simulations have been structured differently. To run the outliers simulations and generate all plots, the only command needed is
+
+```bash
+python simulations/DE-SWAN/outliers/run_all_sims.py
+```
 All outlier simulation results will be stored in a folder with time/date stamp.
 
   

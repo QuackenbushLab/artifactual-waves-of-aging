@@ -10,7 +10,6 @@ sys.path.append(PROJECT_ROOT)
 from de_SWAN_helpers import generate_exp_data
 import bimodal_dist_configs as config
 
-
 def main():
 
 
