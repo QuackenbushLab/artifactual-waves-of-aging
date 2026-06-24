@@ -1,6 +1,13 @@
 # Artifactual Waves of Aging
 
-This repository contains code supporting _Artifactual "waves" of molecular aging arise when coupling LOESS with DE-SWAN_. 
+This repository contains code supporting _LOESS and DE-SWAN Can induce artifactual "waves" of molecular aging_. 
+Code in this repository was written by Madeleine Carbonneau (mtcarbonneau) and Kate Shutta (katehoffshutta). Please raise any questions or comments regarding the code via Github. Please direct other correspondence to the corresponding author, John Quackenbush (johnq@hsph.harvard.edu). 
+
+## Citation
+
+Carbonneau M\*, Shutta KH\*, Miller JW, Snyder MP, Shen X, Quackenbush J. _LOESS and DE-SWAN can induce artifactual "waves" of molecular aging._ Submitted to biorxiv, June 23, 2026. 
+
+\*Equally contributing first authors
 
 ## Contents
 
@@ -115,11 +122,8 @@ python simulations/DE-SWAN/outliers/run_all_sims.py
 All outlier simulation results will be stored in a folder with time/date stamp.
 
   
-## Authors
 
-Code in this repository was written by Madeleine Carbonneau (mtcarbonneau) and Kate Shutta (katehoffshutta).
-
-## Citation
-
-Add citation here when preprint is up. 
+\* Equally contributing first authors
+\+ Correspondence: johnq@hsph.harvard.edu
+ 
 
