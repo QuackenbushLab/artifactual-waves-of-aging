@@ -27,7 +27,7 @@ library(foreach)
 library(doParallel)
 ```
 
-# Figure 4
+# Figure 5
 
 Load the sample data. 
 
@@ -35,7 +35,7 @@ Load the sample data.
 ipop_sample_data = read.csv("../ipop_data_analysis/nonlinear_aging_data/sample_info.csv")
 ```
 
-Specify number of simulations and register parallel processing. Note that this is quite time consuming simulation because LOESS must be run on every molecule for every iteration and the span must be optimized. For illustration, we have set `nit=2` in this notebook. To reproduce the paper, please set `nit=100`
+Specify number of simulations and register parallel processing. Note that this is quite time consuming simulation because LOESS must be run on every molecule for every iteration and the span must be optimized. For illustration, we have set `nit=2` and `npred=50` in this notebook. To reproduce the paper, please set `nit=50` and `npred = 8556`.
 
 ```{R}
 nit = 2
@@ -48,7 +48,7 @@ Run LOESS + DE-SWAN on the iPOP age distribution for `nit` different random samp
 transcriptomic_ipop = foreach(i=1:nit) %dopar%
 { 
   test_age_dist(ipop_sample_data$adjusted_age,
-              npred = 8556,
+              npred = 50, 
               bucket = 20, 
               optimize_loess = T, 
               do_ipop = T,
@@ -59,12 +59,13 @@ transcriptomic_ipop = foreach(i=1:nit) %dopar%
 doParallel::stopImplicitCluster()
 ```
 
-Plot the waves of aging.
+Plot the waves of aging. Note that you will need to adjust the y-axis depending on the number of predictors you use. To reproduce the results of the paper, please set `ylim(5000,7000)` below.
 
 ```{R}
-plot_from_sim_list(transcriptomic_ipop,npred=8556) + 
-  ylim(5000,7000) +
-  geom_vline(xintercept = 45, linetype = "dashed") +
+plot_from_sim_list(transcriptomic_ipop,npred=50) + 
+  #ylim(5000,7000) +
+  ylim(0,50)+
+  geom_vline(xintercept = 44, linetype = "dashed") +
   geom_vline(xintercept = 61, linetype = "dashed") +
   annotate("text",x=48.5,y=5000,label="iPOP Tx Crest 1: 44") +
   annotate("text",x=57.5,y=5000,label="iPOP Tx Crest 2: 61") +
@@ -74,3 +75,34 @@ plot_from_sim_list(transcriptomic_ipop,npred=8556) +
         legend.position = "none")
 ```
 
+
+Plot the correlations.
+
+```{R}
+npeeps = list()
+npeeps[[40]] = sum(ipop_sample_data$adjusted_age >= 40 &
+                     ipop_sample_data$adjusted_age < 50 )
+for(i in seq(41,65,by=1))
+  npeeps[[i]] = sum(ipop_sample_data$adjusted_age >= (i-10) & 
+                         ipop_sample_data$adjusted_age < (i + 10))
+
+all_profiles = lapply(transcriptomic_ipop,function(x){get_profile(x[[2]])})
+for(i in 1:length(all_profiles))
+  all_profiles[[i]]$id = paste0("Trial:",i)
+
+all_profiles_df = Reduce(rbind.data.frame, all_profiles)
+mean_profile = all_profiles_df %>%
+  group_by(center) %>%
+  summarize(mean_nhits = mean(nhits))
+
+mean_profile$npeeps = unlist(npeeps)
+
+library(ggrepel)
+ggplot(mean_profile, aes(x=npeeps/nrow(ipop_sample_data), y=mean_nhits, label=center, color=center)) + 
+  geom_point() +
+  geom_label_repel() + 
+  xlab("proportion of total study population falling in sliding window") +
+  ylab("average # molecules/8556 with q < 0.05 (nsim = 50)") + 
+  ggtitle("Number of hits anticorrelates with number of samples in window")
+
+```
