@@ -122,8 +122,3 @@ python simulations/DE-SWAN/outliers/run_all_sims.py
 All outlier simulation results will be stored in a folder with time/date stamp.
 
   
-
-\* Equally contributing first authors
-\+ Correspondence: johnq@hsph.harvard.edu
- 
-
