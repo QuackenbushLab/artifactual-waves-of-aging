@@ -1,5 +1,5 @@
 ---
-title: "Artifactual Waves of Aging: Figure 3"
+title: "Artifactual Waves of Aging: Four Distributions LOESS+DE-SWAN Figure (Figure 4)"
 author: "Kate Shutta"
 date: "2026-04-10"
 output: html_document
@@ -10,7 +10,7 @@ output: html_document
 Load our custom functions for running LOESS+DE-SWAN and investigating simulation results.
 
 ```{R}
-source("../null_simulations/loess_utils.R")
+source("../utils/loess_utils.R")
 ```
 
 Load libraries.
@@ -27,12 +27,12 @@ library(doParallel)
 ```
 
 
-# Figure 3 simulation 
+# Figure 4 simulation 
 
-Define simulation parameters.
+Define simulation parameters. Note that this is quite time-consuming because the LOESS must be run for each molecule in each iteration. To make this code accessible for a first pass, `nit` is set to 5 and a 5-core implicit cluster is registered with `doParallel`. To reproduce the results of the paper, `nit` should be set to 100.
 
 ```{R}
-nit = 100
+nit = 5
 npred = 1000
 bucket = 20
 logfile = "loess_notebook.log"
@@ -53,8 +53,7 @@ gaussian_mixture_ages = c(rnorm(n=100,35,6),rnorm(n=100,65,6))
 Load iPOP age distribution from provided data for transcriptomics in the Shen et al. github.
 
 ```{R}
-# replace with wget for full standalone file
-ipop_sample_data = read.csv("../ext/transcriptomics/sample_info.csv")
+ipop_sample_data = read.csv("../ipop_data_analysis/nonlinear_aging_data/sample_info.csv")
 ipop_ages = ipop_sample_data$adjusted_age
 ```
 
