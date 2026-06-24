@@ -28,7 +28,7 @@ set.seed(1989)
 uniform_ages = runif(n=200,min=21,max=70)
 gaussian_ages = rnorm(n=200,mean=50, sd=8)
 gaussian_mixture_ages = c(rnorm(n=100,35,6),rnorm(n=100,65,6))
-ipop_data = read.csv("../ext/transcriptomics_sample_info.csv")
+ipop_data = read.csv("../ipop_data_analysis/nonlinear_aging_data/sample_info.csv")
 ipop_ages = ipop_data$adjusted_age
 ```
 
@@ -57,6 +57,8 @@ Function to make heatmaps.
 ```{R}
 makeHeatmaps = function(data,dist,main_title ="")
 {
+  # note that heatmap.2 calls the hclust which defaults to complete
+  # linkage and the dist function which defaults to Euclidean
   heatmap.2(as.matrix(t(data[[1]][,-1])),
             trace="none",
             Rowv=T,
@@ -138,7 +140,7 @@ Function for plotting cluster trajectories.
 plot_clusters = function(loessed_df, k)
 {
   clust_df = t(loessed_df[,-1])
-  df_hclust = hclust(dist(clust_df),method="complete")
+  df_hclust = hclust(dist(clust_df),method="complete") # default for dist is Euclidean
   clusters = cutree(df_hclust,k=k)
   for(i in 1:k)
   {
@@ -146,8 +148,8 @@ plot_clusters = function(loessed_df, k)
     centroid = apply(cluster_data,1,mean)
     plot(loessed_df$ages, centroid,ylim=c(-2,2),
           xlab = "age", ylab = "molecule level",
-         type="l")
-    title(paste0("n = ", ncol(cluster_data)), line=-2)
+         type="l", cex.axis = 1.5, cex.lab=1.25)
+    title(paste0("n = ", ncol(cluster_data)), line=-2,cex.main=2)
     for(j in 1:ncol(cluster_data))
     {
       lines(loessed_df$ages, cluster_data[,j],lwd=0.3,col="grey")
@@ -173,7 +175,7 @@ mtext("Gaussian Age Distribution",outer=T, line=0, cex = 1.25)
 
 par(mfrow = c(3,4),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_mixture_data[[2]],
-              k=12)
+              k=6)
 mtext("Gaussian Mixture Age Distribution",outer=T, line=0, cex = 1.25)
 
 par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
@@ -191,31 +193,18 @@ plot_clusters(loessed_df = gaussian_data[[2]],
               k=2)
 mtext("Gaussian Age Distribution, k=2",outer=T, line=0, cex = 1.25)
 
-par(mfrow = c(1,4),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+
+par(mfrow = c(2,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_data[[2]],
               k=4)
 mtext("Gaussian Age Distribution, k=4",outer=T, line=0, cex = 1.25)
 
-par(mfrow = c(1,6),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+
+par(mfrow = c(3,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_data[[2]],
               k=6)
+mtext("Gaussian Age Distribution, k=6",outer=T, line=0, cex = 1.25)
 
 ```
 
-# Silhouette scores
 
-For the example of the Gaussian data, calculate silhouette scores to demonstrate one method for selecting the number of clusters. Note: the R package NbClust offers a more comprehensive set of tools for doing this. 
-
-```{R}
-clust_df = t(gaussian_data[[2]][,-1])
-df_hclust = hclust(dist(clust_df),method="complete")
-
-sil_scores = list()
-for(i in 2:7)
-  sil_scores[[i]] = silhouette(x=cutree(df_hclust,k=i),
-           dist = dist(clust_df))
-
-plot(c(2:7),sapply(sil_scores[2:7],function(x){mean(x[,3])}),
-     pch = 20,
-     ylab = "silhouette scores", xlab = "n clusters", main = "Silhouette Scores: Gaussian Data")
-```

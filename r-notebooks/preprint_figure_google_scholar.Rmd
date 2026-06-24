@@ -1,0 +1,38 @@
+---
+title: "Google Scholar Search Figures"
+author: "Kate Shutta"
+date: "2026-06-23"
+output: html_document
+---
+
+Read in the data from the Publish or Perish output. See the manuscript for details.
+
+```{R}
+library(dplyr)
+library(ggplot2)
+dat = read.table("../ipop_data_analysis/nonlinear_aging_data/pop_output_annotated.txt",
+                 sep="\t",header=T) %>%
+    filter(Cites.Lehallier.2019 != "No",
+         Cites.Lehallier.2019 != "Omit (not in English)") 
+dat$Year[dat$Year == "2026"] = "2026*"
+dat$Year = factor(dat$Year)
+```
+
+
+```{R}
+dat %>% 
+  ggplot(aes(x=Year)) + geom_bar() + 
+  theme_minimal() +
+  geom_text(
+    stat = "count", 
+    aes(label = after_stat(count)), 
+    vjust = -0.5
+  ) +
+  xlab("Year") +
+  ylab("Number of Search Query Results")
+ggsave(file="literature_search_timeline.jpeg",width=6,height=4)
+```
+```{R}
+dim(dat)
+sum(dat$Cites)
+```

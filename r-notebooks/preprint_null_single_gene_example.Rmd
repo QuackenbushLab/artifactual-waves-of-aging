@@ -30,7 +30,7 @@ Generate the random data, with ages drawn from a normal distribution with mean 5
 
 ```{R}
 set.seed(0303)
-ages = rnorm(n=100, mean=55, sd=7)
+age = rnorm(n=100, mean=55, sd=7)
 gene = rnorm(100)
 ```
 
@@ -38,18 +38,18 @@ Define the DE-SWAN parameters.
 
 ```{R}
 bucket = 20
-windows = seq(min(ages)+bucket/2, max(ages)-bucket/2,by=1)
+windows = seq(min(age)+bucket/2, max(age)-bucket/2,by=1)
 ```
 
 Define the grid of values for LOESS interpolation, run LOESS, and organize into a data frame for plotting.
 
 ```{R}
-loess_grid = seq(min(ages),max(ages),by=0.5)
-loess_mod = loess(gene ~ ages)
+loess_grid = seq(min(age),max(age),by=0.5)
+loess_mod = loess(gene ~ age)
 loess_original_data = predict(loess_mod)
 loess_data = predict(loess_mod, 
                      newdata = loess_grid)
-df = data.frame("age"=ages,
+df = data.frame("age"=age,
                 "gene"=gene,
                 "loess_data_original"=loess_original_data)
 df_loess = data.frame("loess_grid" = loess_grid,
@@ -59,7 +59,7 @@ df_loess = data.frame("loess_grid" = loess_grid,
 Create Figure 2, panels a-d, from the simulated data and LOESS fit.
 
 ```{R}
-p1 = df %>% ggplot(aes(x=ages,y=gene)) + 
+p1 = df %>% ggplot(aes(x=age,y=gene)) + 
   geom_ribbon(aes(xmin=min(windows)-bucket/2, 
                   xmax=min(windows)),
               alpha=0.4,fill="peachpuff2") +
@@ -75,7 +75,7 @@ p1
 ```
 
 ```{R}
-p2 = df %>% ggplot(aes(x=ages,y=gene)) +
+p2 = df %>% ggplot(aes(x=age,y=gene)) +
   geom_ribbon(aes(xmin=min(windows)-bucket/2, 
                   xmax=min(windows)),
               alpha=0.4,fill="peachpuff2") +
@@ -84,15 +84,18 @@ p2 = df %>% ggplot(aes(x=ages,y=gene)) +
             alpha=0.4,
             fill="darkseagreen1") +
   geom_point(alpha=0.1) +
-  geom_line(aes(x=ages,y=loess_data_original),color="black") +
+  geom_line(aes(x=age,y=loess_data_original),color="black") +
   xlab("age") + 
   ylab("expression") +
   theme_minimal()
 p2
 ```
 
+
+
+
 ```{R}
-p3 = df %>% ggplot(aes(x=ages,y=gene)) + 
+p3 = df %>% ggplot(aes(x=age,y=gene)) + 
   geom_ribbon(aes(xmin=min(windows)-bucket/2, 
                   xmax=min(windows)),
               alpha=0.4,fill="peachpuff2") +
@@ -101,7 +104,7 @@ p3 = df %>% ggplot(aes(x=ages,y=gene)) +
               alpha=0.4,
               fill="darkseagreen1") +
   geom_point(alpha=0.1) + 
-  geom_point(aes(x=ages,y=loess_data_original),color="black")+
+  geom_point(aes(x=age,y=loess_data_original),color="black", size=0.3)+
   xlab("age") + 
   ylab("expression") +
   theme_minimal()
@@ -109,7 +112,7 @@ p3
 ```
 
 ```{R}
-p4 = df %>% ggplot(aes(x=ages,y=gene)) + 
+p4 = df %>% ggplot(aes(x=age,y=gene)) + 
   geom_ribbon(aes(xmin=min(windows)-bucket/2, 
                   xmax=min(windows)),
               alpha=0.4,fill="peachpuff2") +
@@ -119,11 +122,18 @@ p4 = df %>% ggplot(aes(x=ages,y=gene)) +
               fill="darkseagreen1") +
   geom_point(alpha=0.1) + 
   geom_point(data=df_loess, aes(x=loess_grid,
-                                y=loess_data))+
+                                y=loess_data),size=0.3)+
   xlab("age") + 
   ylab("expression") +
   theme_minimal()
 p4
+```
+
+View plots.
+
+```{R}
+p1 + p2 + p3 + p4 + plot_layout(nrow = 1)
+ggsave("figs/loess_de_swan_figure_a.jpeg",width=12,height=3,dpi=300)
 ```
 
 Define "younger" and "older" windows for the first sliding window as an illustrative example.
@@ -140,12 +150,12 @@ df_loess$group = ifelse(df_loess$loess_grid <= min(windows),"younger",
 df_loess$group = fct_reorder(df_loess$group, df_loess$loess_grid)
 ```
 
-Zoom in on the first window (ages 35-45).
+Zoom in on the first window (age 35-45).
 
 ```{R}
 q1 = df %>%
   filter(!is.na(group)) %>%
-  ggplot(aes(x=ages,y=gene)) +
+  ggplot(aes(x=age,y=gene)) +
   xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
   geom_vline(xintercept = min(windows),col="grey") +
   geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
@@ -155,13 +165,13 @@ q1 = df %>%
   ylab("expression") +
   theme_minimal()
 
-q2 = ggplot(data = df, aes(x=ages,y=gene)) +
+q2 = ggplot(data = df, aes(x=age,y=gene)) +
   xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
   geom_vline(xintercept = min(windows),col="grey") +
   geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
   geom_ribbon(aes(xmin=min(windows), xmax=Inf), alpha=0.4,fill="darkseagreen1") +
   geom_point(alpha = 0.5) +
-  geom_line(aes(x=ages,y=loess_data_original),color="red") +
+  geom_line(aes(x=age,y=loess_data_original),color="red") +
   xlab("age") + 
   ylab("expression") +
   theme_minimal()
@@ -171,7 +181,7 @@ Run DE-SWAN on the LOESS-interpolated data, using a bucket of size 20 and window
 
 ```{R}
 bucket = 20
-windows = seq(min(ages)+bucket/2, max(ages)-bucket/2,by=1)
+windows = seq(min(age)+bucket/2, max(age)-bucket/2,by=1)
 de_swan_res = do_de_swan(age = loess_grid,
                 response = t(data.frame(loess_data)),
                 window = windows,
@@ -181,7 +191,7 @@ de_swan_res = do_de_swan(age = loess_grid,
 Plot first window expression without LOESS.
 
 ```{R}
-q1 = ggplot(data = df, aes(x=ages,y=gene)) +
+q1 = ggplot(data = df, aes(x=age,y=gene)) +
   xlim(min(windows)-bucket/2,min(windows)+bucket/2) +
   geom_vline(xintercept = min(windows),col="grey") +
   geom_ribbon(aes(xmin=-Inf, xmax=min(windows)),alpha=0.4,fill="peachpuff2") +
@@ -248,6 +258,7 @@ q3
 Plot first window LOESS-interpolated ranks.
 
 ```{R}
+set.seed(1213)
 q6 = df_loess %>%
   filter(!is.na(group)) %>%
   mutate(rank = rank(loess_data)) %>%
@@ -269,7 +280,7 @@ q5 = df_loess %>%
   ggplot(aes(y=loess_data,x=group,fill=group)) +
   geom_boxplot() + 
   geom_jitter(height=0,width=0.1) + 
-  stat_compare_means(position = position_nudge(y = -0.1,x=0.6)) + 
+  stat_compare_means(position = position_nudge(y = -0.1,x=0.5)) + 
   scale_fill_manual(values=c("peachpuff2","darkseagreen1")) +
   ylab("loess-interpolated expression") + 
   theme_minimal() +
@@ -278,22 +289,19 @@ q5 = df_loess %>%
 q5
 ```
 
-Save plots.
+View plots.
 
 ```{R}
-#layout_matrix = matrix(c(1, 2, 3),nrow=1)
-#qplot1 = arrangeGrob(q1, q8, q7,
-                    #layout_matrix = layout_matrix)
-#qplot2 = arrangeGrob(q3, q6, q5,
-#                    layout_matrix = layout_matrix)
-
-(q1 + q8 + q7) / (q3 + q6 + q5)
+(q1 + q8 + q7) 
+ggsave("figs/loess_de_swan_figure_b.jpeg",width=9,height=3.5,dpi=300)
+(q3 + q6 + q5)
+ggsave("figs/loess_de_swan_figure_c.jpeg",width=9,height=3.5,dpi=300)
 ```
 
 Plot the age distribution next to significance for inspection in D.
 
 ```{R}
-p0 = df %>% ggplot(aes(x=ages)) + 
+p0 = df %>% ggplot(aes(x=age)) + 
   geom_histogram(color="black",fill="white") +
   theme_minimal()
 p5 = de_swan_res %>%
@@ -303,7 +311,8 @@ p5 = de_swan_res %>%
   geom_point(size=3) +
   xlab("window center") + 
   ylab("-log10(FDR)") +
-  xlim(min(ages),max(ages)) + 
+  xlim(min(age),max(age)) + 
   theme_minimal()
 p0 + p5
+ggsave("figs/loess_de_swan_figure_d.jpeg",width=9,height=3.5,dpi=300)
 ```
