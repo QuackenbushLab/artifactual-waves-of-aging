@@ -4,8 +4,8 @@ This repository contains code supporting _Artifactual "waves" of molecular aging
 
 ## Contents
 
-+ `r-notebooks` contains the scripts for Section 3: "Simulation example on a single gene", Section 4: "4	Waves of aging appear in null data and depend on the age distribution", and Figures 2, 3, and 4.
-+ `ipop-data-analysis` contains the scripts for Section 5: "DE-SWAN alone does not detect 'waves of aging' in the iPOP data", Section 6: "Use of permutation testing to validate the procedure", and Figures 5, 6, and 7.
++ `r-notebooks` contains the scripts for _Artifact 1: LOESS can induce clustered trajectories in null data_ and some components of _Artifact 2: LOESS+DE-SWAN can elicit artifactual waves of aging that are not supported by null simulations and permutation testing_.
++ `ipop-data-analysis` contains the scripts for the remaining components of _Artifact 2_ and for _Artifact 3: DE-SWAN identifies non-linear patterns of aging in linear data due to age-associated differences in statistical power_. 
 + `utils` provides supporting utility functions for `r-notebooks`.
 + `simulations/DE-SWAN` contains code for DE-SWAN simulations shown in section _Artifact 3: DE-SWAN identifies non-linear patterns of aging in linear data due to age-associated differences in statistical power_.
 
@@ -23,6 +23,9 @@ Navigate to the repository
 ```bash
 cd artifactual-waves-of-aging
 ```
+
+### For Python code:
+
 Set up a virtual environment:
 
 Mac:
@@ -48,13 +51,19 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+### For R code
+
+Required packages are listed at the top of each notebook in the `r-notebooks` directory. We are in the process of preparing an environment file to make this process easier. 
+
+### Simulation studies on random noise
+
+RMarkdown files in the `r-notebooks` directory can be used to reproduce the results of the simulations that identify patterns in random noise. This directory also includes the script to plot the literature search results.
 
 ### iPOP Data Analysis
 
 Replication of the transcriptomic analysis in _Nonlinear dynamics of multi-omics profiles during human aging_ can be found in the Jupyter Notebooks here (`ipop_data_analysis/transcriptomics_replication.ipynb`). Instructions for downloading data and reproducing the analysis can be found in the notebook itself. When downloaded, data should be stored in `ipop_data_analysis/nonlinear_aging_data`. Due to the amount of time permutation testing can take, previous results have been stored in `ipop_data_analysis/permutation_rslts`. Lastly, `ipop_data_analysis/loess.R` contains code from the original analysis [repository](https://github.com/jaspershen-lab/ipop_aging) to run LOESS-fitting.
 
 We have additionally included the the proteomic pipeline (`ipop_data_analysis/proteomics_replication.ipynb`).
-
 
 ### DE-SWAN Simulations
 
