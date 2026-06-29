@@ -5,7 +5,7 @@ Code in this repository was written by Madeleine Carbonneau (mtcarbonneau) and K
 
 ## Citation
 
-Carbonneau M\*, Shutta KH\*, Miller JW, Snyder MP, Shen X, Quackenbush J. _LOESS and DE-SWAN can induce artifactual "waves" of molecular aging._ Submitted to biorxiv, June 23, 2026. 
+Carbonneau M\*, Shutta KH\*, Miller JW, Snyder MP, Shen X, Quackenbush J. _LOESS and DE-SWAN can induce artifactual "waves" of molecular aging._ bioRxiv 2026.06.24.734079; doi: https://doi.org/10.64898/2026.06.24.734079
 
 \*Equally contributing first authors
 
