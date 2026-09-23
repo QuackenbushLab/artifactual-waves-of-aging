@@ -1,0 +1,228 @@
+---
+title: "Compare Record Reviews"
+author: "Kate Shutta"
+date: "2026-09-18"
+output: html_document
+---
+
+```{R}
+library(gplots)
+library(ggplot2)
+library(readxl)
+library(UpSetR)
+```
+
+```{R}
+human_results = read_xlsx("ext/Record Reviews/three_literature_search_humans.xlsx", skip=1)
+names(human_results)[16:19] = c("lehallierCite_khs",
+                                "methodology_khs",
+                                "ageTopic_khs",
+                                "notes_khs")
+names(human_results)[20:23] = c("lehallierCite_mc",
+                                "methodology_mc",
+                                "ageTopic_mc",
+                                "notes_mc")
+```
+
+Read Claude results:
+
+```{R}
+claude_results = read_xlsx("../ext/Record Reviews/three_literature_search_shared_for_Claude_classified.xlsx", skip=1)
+names(claude_results)[16:19] = c("lehallierCite_claude",
+                                "methodology_claude",
+                                "ageTopic_claude",
+                                "notes_claude")
+```
+
+Read Codex results.
+
+```{R}
+codex_results = read_xlsx("../ext/Record Reviews/three_literature_search_shared_for_codexGPT_classified.xlsx", skip=1)
+names(codex_results)[16:19] = c("lehallierCite_codex",
+                                "methodology_codex",
+                                "ageTopic_codex",
+                                "notes_codex")
+```
+
+Merge all evaluations. The first 15 columns have the same names in all files, so we don't need to specify a merge key. Use a full join in case of any issues.
+
+```{R}
+all_results = full_join(human_results, claude_results) %>%
+  full_join(codex_results)
+```
+
+Convert the evaluation columns to integers for the purpose of visualization.
+
+Citations:
+
+```{R}
+lehallierCols = grep("lehallierCite",names(all_results))
+recodeCites = function(x)
+{
+  recode_values(x,
+                "y"~1,
+                "n"~0,
+                "Yes"~1,
+                "No"~0) # leave any other values as NA
+}
+all_results[,lehallierCols] = apply(all_results[,lehallierCols],2,recodeCites)
+```
+
+LOESS and/or DE-SWAN methodology:
+
+```{R}
+methodsCols = grep("methodology",names(all_results))
+recodeMethodology = function(x)
+{
+  recode_values(x,
+                "y"~1,
+                "n"~0,
+                "uncertain"~0.5,
+                "unclear"~ 2,
+                "Yes"~1,
+                "No"~0,
+                "Uncertain"~0.5) # leave any other values as NA
+}
+all_results[,methodsCols] = apply(all_results[,methodsCols],2,recodeMethodology)
+```
+
+Aging topic:
+
+```{R}
+ageCols = grep("ageTopic",names(all_results))
+recodeAgeTopic = function(x)
+{
+  recode_values(x,
+                "y"~1,
+                "n"~0,
+                "uncertain"~0.5,
+                "unclear"~ 2,
+                "Yes"~1,
+                "No"~0,
+                "Uncertain"~0.5) # leave any other values as NA
+}
+all_results[,ageCols] = apply(all_results[,ageCols],2,recodeAgeTopic)
+```
+
+Make a heatmap for exploratory purposes.
+
+```{R}
+# convert NAs to negative
+tmp = all_results[,c(lehallierCols,methodsCols,ageCols)]
+all_results[,c(lehallierCols,methodsCols,ageCols)][is.na(tmp)] = -1
+heatmap.2(t(as.matrix(all_results[,c(lehallierCols,methodsCols,ageCols)])), trace="none",
+          Rowv = F,col="bluered", margins = c(5,10)) 
+
+```
+
+What are the big hits?
+
+```{R}
+all_results %>% filter(lehallierCite_khs == 1,
+                       lehallierCite_mc == 1,
+                       lehallierCite_claude == 1,
+                       lehallierCite_codex == 1,
+                       methodology_khs == 1,
+                       methodology_mc == 1,
+                       methodology_claude == 1,
+                       methodology_codex == 1,
+                       ageTopic_khs == 1,
+                       ageTopic_mc == 1,
+                       ageTopic_claude == 1,
+                       ageTopic_codex == 1) %>%
+  View()
+```
+
+Human agreement:
+
+```{R}
+top_hits = all_results %>% filter(lehallierCite_khs == 1,
+                       lehallierCite_mc == 1,
+                       methodology_khs %in% c(1),
+                       methodology_mc %in% c(1),
+                       ageTopic_khs == 1,
+                       ageTopic_mc == 1) 
+```
+
+Sources:
+
+```{R}
+table(top_hits$inString)
+```
+
+Year, by consensus of the most recent (in the case where preprints may have been earlier).
+
+```{R}
+top_hits$yearConsensus = pmax(pmax(top_hits$yearScholar,top_hits$yearSciDir,na.rm=T),top_hits$yearScopus,na.rm=T)
+```
+
+Manual patch for number 37:
+```{R}
+idx = which(top_hits$titleScholar == "Establishment and Application of a Cytokine Aging Clock in Chinese Population: A New Tool for Health Assessment")
+top_hits$yearConsensus[idx] = 2025
+```
+
+Histogram: 
+
+```{R}
+top_hits %>% 
+  ggplot(aes(x=yearConsensus)) + geom_bar() + 
+  theme_minimal() +
+  geom_text(
+    stat = "count", 
+    aes(label = after_stat(count)), 
+    vjust = -0.5
+  ) +
+  xlab("Year") +
+  ylab("Number of Verified Search Query Results") + 
+  scale_x_continuous(breaks=seq(2019,2026,by=1))
+ggsave(file="literature_search_timeline_three_sources.jpeg",width=6,height=4)
+```
+
+How did we all do on methods?
+
+```{R}
+table(all_results$methodology_mc)
+table(all_results$methodology_khs)
+table(all_results$methodology_codex)
+table(all_results$methodology_claude)
+```
+
+UpSet plot on citation (yes):
+
+```{R}
+cited = list("MC"=all_results[all_results$lehallierCite_mc == 1,]$Index,
+             "KHS"=all_results[all_results$lehallierCite_khs == 1,]$Index,  
+             "Codex"=all_results[all_results$lehallierCite_codex == 1,]$Index,
+             "Claude"=all_results[all_results$lehallierCite_claude == 1,]$Index)
+jpeg("lehallier_cite_upset.jpeg",width=5,height=5,units="in",res=300)
+upset(UpSetR::fromList(cited), sets = rev(names(cited)), keep.order = T)
+grid.text("Cites Lehallier et al. 2019", 0.6, 0.95)
+dev.off()
+```
+
+UpSet plot on methods uncertainty:
+
+```{R}
+uncertain = list("MC"=all_results[all_results$methodology_mc == 0.5,]$Index,
+             "KHS"=all_results[all_results$methodology_khs == 0.5,]$Index,  
+             "Codex"=all_results[all_results$methodology_codex == 0.5,]$Index,
+             "Claude"=all_results[all_results$methodology_claude == 0.5,]$Index)
+jpeg("methods_uncertainty_upset.jpeg",width=5,height=5,units="in",res=300)
+upset(UpSetR::fromList(uncertain), sets = rev(names(uncertain)), keep.order = T)
+grid.text("LOESS/DE-SWAN Use Uncertain", 0.7, 0.95)
+dev.off()
+```
+
+UpSet plot on aging:
+
+```{R}
+jpeg("topic_aging_upset.jpeg",width=5,height=5,units="in",res=300)
+aging = list("MC"=all_results[all_results$ageTopic_mc == 1,]$Index,
+             "KHS"=all_results[all_results$ageTopic_khs == 1,]$Index,  
+             "Codex"=all_results[all_results$ageTopic_codex == 1,]$Index,
+             "Claude"=all_results[all_results$ageTopic_claude == 1,]$Index)
+upset(UpSetR::fromList(aging), sets = rev(names(aging)), keep.order=T)
+grid.text("Main Topic Aging/Age-Related Disease", 0.65, 0.95)
+dev.off()
+```

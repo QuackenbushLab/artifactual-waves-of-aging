@@ -1,0 +1,150 @@
+---
+title: "Integrating Google Scholar, Scopus, and ScienceDirect Results"
+author: "Kate Shutta"
+date: "2026-09-08"
+output: html_document
+---
+
+```{R}
+library(dplyr)
+library(fuzzyjoin)
+library(stringdist)
+```
+
+Read all three query results.
+
+```{R}
+scholar = read.csv("../ext/20260908_pop_results.csv")
+scopus = read.csv("../ext/scopus_export_title_abs_key.csv")
+scidir = read.table("../ext/20260909_ScienceDirect_parsed.tsv",
+                    sep="\t",header=F)
+names(scidir) = c("Title","Year","DOI")
+
+scholarDupTitles = unique(scholar$Title[duplicated(scholar$Title)]) # four
+scopusDupTitles = unique(scopus$Title[duplicated(scopus$Title)]) # none
+sciDirDupTitles = unique(scidir$Title[duplicated(scidir$Title)]) # none
+
+# for duplicates, keep the min Google Scholar rank (the best one)
+scholar$keep = T
+for(duptitle in scholarDupTitles)
+{
+  dups_idx = which(scholar$Title == duptitle)
+  keep_idx = dups_idx[which.min(scholar$GSRank[dups_idx])]
+  rm_idx = setdiff(dups_idx,keep_idx)
+  scholar$keep[rm_idx] = F
+}
+
+scholar = scholar %>% filter(keep) %>% select(-keep)
+```
+
+
+```{R}
+string_match = function(v1, v2) {
+  stringdist(tolower(v1), tolower(v2), method = "lv") <= 5
+}
+
+scholar$DOI[scholar$DOI == ""]= NA
+x=fuzzy_full_join(scholar,scopus,
+                by=c("Title"),
+                match_fun = list(string_match)) %>%
+  mutate(TitleDist = stringdist(tolower(Title.x),tolower(Title.y),method="lv")) %>%
+  mutate(inScholar = !is.na(Title.x),
+         inScopus = !is.na(Title.y)) %>%
+  select(DOI.x, DOI.y,Year.x,Year.y, Title.x,Source.x,Title.y,Source.title,inScholar,inScopus,) 
+
+library(openxlsx)
+```
+
+Full join Scholar-Scopus with SciDir by Title
+```{R}
+scidir$inSciDir = T
+z = x %>% fuzzy_full_join(scidir,
+                      by = c("Title.x"="Title"),
+                      match_fun = list(string_match)) %>%
+  mutate(inSciDir = !is.na(Title),
+         inScholar = !is.na(Title.x),
+         inScopus = !is.na(Title.y))
+
+w = z %>% 
+  #select(inScholar, inScopus, inSciDir) %>%
+  mutate(inKey = 2^0*as.numeric(inScholar) + 2^1*as.numeric(inScopus) + 2^2* as.numeric(inSciDir)) 
+# 1 = scholar only
+# 2 = scopus only
+# 3 = scholar and scopus
+# 4 = scidir only
+# 5 = scholar and scidir (1 + 4)
+# 6 = scopus and scidir (2 + 4)
+# 7 = scholar and scidir and scopus (1 + 2 + 4)
+```
+
+Inner join Scholar-Scopus with SciDir by Title in Scopus and extract only those that weren't found in Scholar. 
+
+```{R}
+z2 = x %>% fuzzy_inner_join(scidir, # note this is an inner join, so must be in both scopus and scidir
+                      by = c("Title.y"="Title"),
+                      match_fun = list(string_match)) %>%
+  mutate(inSciDir = !is.na(Title),
+         inScholar = !is.na(Title.x),
+         inScopus = !is.na(Title.y)) %>%
+  filter(!inScholar) # these will already have been counted in z
+
+w2 = z2 %>% 
+  #select(inScholar, inScopus, inSciDir) %>%
+  mutate(inKey = 2^0*as.numeric(inScholar) + 2^1*as.numeric(inScopus) + 2^2* as.numeric(inSciDir)) 
+```
+
+The point of having w2 here is that if there is a ScienceDirect hit that is not a hit in Google Scholar but is a hit in Scopus, it will get pulled in. There are 2 such papers according to the tables (key 6). However the 6s are getting double-counted as 4s in z, so we have to remove them. We can do this by filtering the first dataframe to exclude anything that is a ScienceDirect hit (in `w2$Title`) and also is in the first data frame, based on either the Scopus or ScienceDirect titles.
+
+```{R}
+w_filt = w %>% filter(!(Title %in% w2$Title), # removes anything with a scidir title that was in both scopus and scidir
+                      !Title.y %in% w2$Title.y) # removes anything with a scopus title that was in both scopus and scidir
+```
+
+```{R}
+table(w_filt$inKey)
+table(w2$inKey)
+```
+
+We can get everything by filtering and rbinding.
+
+```{R}
+hits_list = list()
+for(key in 1:7)
+{
+  w_key = w_filt %>% filter(inKey == key) 
+  w2_key =  w2 %>% filter(inKey == key) 
+  hits_list[[key]] = rbind.data.frame(w_key, w2_key)
+}
+
+all_hits = Reduce(rbind.data.frame, hits_list)
+
+```
+
+There may need to be manual cleaning of some duplicates.
+
+```{R}
+table(all_hits$inKey)
+all_hits$inString = NA
+all_hits$inString[all_hits$inKey == 1] = "Scholar Only"
+all_hits$inString[all_hits$inKey == 2] = "Scopus Only"
+all_hits$inString[all_hits$inKey == 3] = "Scholar and Scopus"
+all_hits$inString[all_hits$inKey == 4] = "SciDir Only"
+all_hits$inString[all_hits$inKey == 5] = "Scholar and SciDir"
+all_hits$inString[all_hits$inKey == 6] = "Scopus and SciDir"
+all_hits$inString[all_hits$inKey == 7] = "Scholar and Scopus and SciDir"
+# 4 = scidir only
+# 5 = scholar and scidir (1 + 4)
+# 6 = scopus and scidir (2 + 4)
+# 7 = scholar and scidir and scopus (1 + 2 + 4)
+all_hits %>% select(inKey,inString, inScholar, inScopus, inSciDir, Year.x, Year.y, Year,Title.x,Title.y, Title,  DOI.x, DOI.y, DOI) %>% 
+  rename("yearScholar"="Year.x",
+         "yearScopus"="Year.y",
+         "yearSciDir"="Year",
+         "doiScholar"="DOI.x",
+         "doiScopus"="DOI.y",
+         "doiSciDir"="DOI",
+         "titleScholar"="Title.x",
+         "titleScopus"="Title.y",
+         "titleSciDir"="Title") %>%
+  write.xlsx("interim/three_literature_search.xlsx")
+```
