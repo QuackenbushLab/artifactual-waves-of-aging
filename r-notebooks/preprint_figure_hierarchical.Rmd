@@ -48,44 +48,54 @@ gaussian_mixture_data = generateOmics(gaussian_mixture_ages,
                                       npred=1000,
                                 distribution="standard_normal")
 ipop_data = generateOmics(ipop_ages, 
-                          npred=1000, 
+                          npred=1000,
                           distribution="standard_normal")
 ```
 
 Function to make heatmaps.
 
 ```{R}
-makeHeatmaps = function(data,dist,main_title ="")
+
+my_colors = colorRampPalette(c("blue", "white", "red"))(99) 
+
+makeHeatmaps = function(data,dist,main_title ="",outfile="plot.jpeg")
 {
+  jpeg(paste0(outfile,"_raw.jpeg"),width=6,height=6,units="in",res=300)
   # note that heatmap.2 calls the hclust which defaults to complete
   # linkage and the dist function which defaults to Euclidean
   heatmap.2(as.matrix(t(data[[1]][,-1])),
             trace="none",
             Rowv=T,
             Colv=F,
-            col="redblue",
-            labCol =NA, #round(data[[1]]$ages,2),
+            col=my_colors,
+            breaks = seq(-4,4,length.out=100),
+            labCol =NA,
             labRow = NA)
-    title(main_title, line = -3, cex.main=3, adj=0.65)
-
+    title(main_title, line = -3, cex.main=3, adj=0.55)
+  dev.off()
+  jpeg(paste0(outfile,"_clustered.jpeg"),width=6,height=6,units="in",res=300)
   heatmap.2(as.matrix(t(data[[2]][,-1])),
             trace="none",
             Rowv=T,
             Colv=F,
-            col="redblue",
-            labCol = NA, #round(data[[2]]$ages,2),
+            breaks = seq(-2,2,length.out=100),
+            col=my_colors,
+            labCol = NA,
             labRow = NA)
-  title(main_title, line = -3, cex.main=3, adj=0.65)
+  title(main_title, line = -3, cex.main=3, adj=0.55)
+  dev.off()
 }
 ```
 
 Make the heatmaps.
 
 ```{R}
-makeHeatmaps(data = uniform_data, dist = "uniform", main_title = "Uniform")
-makeHeatmaps(data = gaussian_data, dist = "gaussian", main_title = "Gaussian")
-makeHeatmaps(data = gaussian_mixture_data, dist = "gaussian_mixture", main_title = "Gaussian Mixture")
-makeHeatmaps(data = ipop_data, dist = "ipop", main_title = "iPOP")
+makeHeatmaps(data = uniform_data, dist = "uniform", main_title = "Uniform", outfile = "figs/uniform_heatmap")
+makeHeatmaps(data = gaussian_data, dist = "gaussian", main_title = "Gaussian", outfile = "figs/gaussian_heatmap")
+makeHeatmaps(data = gaussian_mixture_data, dist = "gaussian_mixture", main_title = "Gaussian\n Mixture",
+             "figs/gaussian_mixture_heatmap")
+makeHeatmaps(data = ipop_data, dist = "ipop", main_title = "iPOP",
+             "figs/ipop_heatmap")
 ```
 
 # Age density plots
@@ -129,7 +139,8 @@ p4 = ggplot(data = data.frame("age"=ipop_ages),
   theme(axis.title = element_text(size = 15),
         plot.title = element_text(size = 20, hjust = 0.5))
 
-p1 + p2 + p3 + p4
+p1 | p2 | p3 | p4
+ggsave("figs/age_densities_loess_example.jpeg",width=12,height=3)
 ```
 
 # Cluster trajectories
@@ -137,7 +148,8 @@ p1 + p2 + p3 + p4
 Function for plotting cluster trajectories.
 
 ```{R}
-plot_clusters = function(loessed_df, k)
+plot_clusters = function(loessed_df, k,
+                         ymin = -2, ymax=2)
 {
   clust_df = t(loessed_df[,-1])
   df_hclust = hclust(dist(clust_df),method="complete") # default for dist is Euclidean
@@ -146,16 +158,18 @@ plot_clusters = function(loessed_df, k)
   {
     cluster_data = loessed_df[,-1][,which(clusters == i)]
     centroid = apply(cluster_data,1,mean)
-    plot(loessed_df$ages, centroid,ylim=c(-2,2),
+    plot(loessed_df$ages, centroid,
           xlab = "age", ylab = "molecule level",
-         type="l", cex.axis = 1.5, cex.lab=1.25)
-    title(paste0("n = ", ncol(cluster_data)), line=-2,cex.main=2)
+         type="l", cex.axis = 1.5, cex.lab=1.25,
+         ylim=c(ymin,ymax)) #c(min(cluster_data),max(cluster_data)))
     for(j in 1:ncol(cluster_data))
     {
       lines(loessed_df$ages, cluster_data[,j],lwd=0.3,col="grey")
     }
-    lines(loessed_df$ages, centroid,ylim=c(-2,2),
+    lines(loessed_df$ages, centroid,
           lwd=3,col=rainbow(k)[i])
+    title(paste0("n = ", ncol(cluster_data)), line=-2,cex.main=2)
+
   }
 }
 ```
@@ -163,48 +177,58 @@ plot_clusters = function(loessed_df, k)
 Plot trajectories for all four of the age distributions.
 
 ```{R}
+jpeg("figs/uniform_trajectories_yscale2.jpeg",width=6,height=6,units="in",res=300)
 par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = uniform_data[[2]],
               k=6)
 mtext("Uniform Age Distribution",outer=T, line=0, cex = 1.25)
+dev.off()
 
+jpeg("figs/gaussian_trajectories_yscale2.jpeg",width=6,height=6,units="in",res=300)
+par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
+plot_clusters(loessed_df = gaussian_data[[2]],
+              k=6)
+mtext("Gaussian Age Distribution",outer=T, line=0, cex = 1.25)
+dev.off()
+
+jpeg("figs/gaussian_mixture_trajectories_yscale2.jpeg",width=6,height=6,units="in",res=300)
 par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_mixture_data[[2]],
               k=6)
-mtext("Gaussian Age Distribution",outer=T, line=0, cex = 1.25)
-
-par(mfrow = c(3,4),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
-plot_clusters(loessed_df = gaussian_mixture_data[[2]],
-              k=6)
 mtext("Gaussian Mixture Age Distribution",outer=T, line=0, cex = 1.25)
+dev.off()
 
+jpeg("figs/ipop_trajectories_yscale2.jpeg",width=6,height=6,units="in",res=300)
 par(mfrow = c(2,3),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = ipop_data[[2]],
               k=6)
 mtext("iPOP Age Distribution",outer=T, line=0, cex = 1.25)
-
+dev.off()
 ```
 
 Effect of increasing the number of clusters (Supplementary Figure)
 
 ```{R}
+jpeg("figs/supplement_gaussian_k2.jpeg",width=6,height=3,units="in",res=300)
 par(mfrow = c(1,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_data[[2]],
               k=2)
 mtext("Gaussian Age Distribution, k=2",outer=T, line=0, cex = 1.25)
+dev.off()
 
-
+jpeg("figs/supplement_gaussian_k4.jpeg",width=6,height=4,units="in",res=300)
 par(mfrow = c(2,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_data[[2]],
               k=4)
 mtext("Gaussian Age Distribution, k=4",outer=T, line=0, cex = 1.25)
+dev.off()
 
-
+jpeg("figs/supplement_gaussian_k6.jpeg",width=6,height=6,units="in",res=300)
 par(mfrow = c(3,2),oma = c(0, 0, 3, 0), mar = c(4, 4, 1, 1))
 plot_clusters(loessed_df = gaussian_data[[2]],
               k=6)
 mtext("Gaussian Age Distribution, k=6",outer=T, line=0, cex = 1.25)
-
+dev.off()
 ```
 
 

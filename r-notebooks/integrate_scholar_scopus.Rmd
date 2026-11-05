@@ -96,8 +96,8 @@ w2 = z2 %>%
 The point of having w2 here is that if there is a ScienceDirect hit that is not a hit in Google Scholar but is a hit in Scopus, it will get pulled in. There are 2 such papers according to the tables (key 6). However the 6s are getting double-counted as 4s in z, so we have to remove them. We can do this by filtering the first dataframe to exclude anything that is a ScienceDirect hit (in `w2$Title`) and also is in the first data frame, based on either the Scopus or ScienceDirect titles.
 
 ```{R}
-w_filt = w %>% filter(!(Title %in% w2$Title), # removes anything with a scidir title that was in both scopus and scidir
-                      !Title.y %in% w2$Title.y) # removes anything with a scopus title that was in both scopus and scidir
+w_filt = w %>% filter(!(Title %in% w2$Title), # removes anything with a scidir title that was in both scopus and scidir but not scholar
+                      !Title.y %in% w2$Title.y) # removes anything with a scopus title that was in both scopus and scidir but not scholar 
 ```
 
 ```{R}

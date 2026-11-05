@@ -70,7 +70,8 @@ p1 = df %>% ggplot(aes(x=age,y=gene)) +
   geom_point() +
   xlab("age") + 
   ylab("expression") +
-  theme_minimal()
+  theme_minimal() + 
+  annotate("text",label="(i)",x=70,y=2)
 p1
 ```
 
@@ -87,7 +88,9 @@ p2 = df %>% ggplot(aes(x=age,y=gene)) +
   geom_line(aes(x=age,y=loess_data_original),color="black") +
   xlab("age") + 
   ylab("expression") +
-  theme_minimal()
+  theme_minimal() +
+  annotate("text",label="(ii)",x=70,y=2)
+
 p2
 ```
 
@@ -107,7 +110,8 @@ p3 = df %>% ggplot(aes(x=age,y=gene)) +
   geom_point(aes(x=age,y=loess_data_original),color="black", size=0.3)+
   xlab("age") + 
   ylab("expression") +
-  theme_minimal()
+  theme_minimal() +
+  annotate("text",label="(iii)",x=70,y=2)
 p3
 ```
 
@@ -125,7 +129,8 @@ p4 = df %>% ggplot(aes(x=age,y=gene)) +
                                 y=loess_data),size=0.3)+
   xlab("age") + 
   ylab("expression") +
-  theme_minimal()
+  theme_minimal() +
+  annotate("text",label="(iv)",x=70,y=2)
 p4
 ```
 
@@ -139,14 +144,14 @@ ggsave("figs/loess_de_swan_figure_a.jpeg",width=12,height=3,dpi=300)
 Define "younger" and "older" windows for the first sliding window as an illustrative example.
 
 ```{R}
-df$group = ifelse(df$age <= min(windows),"younger", 
-                        ifelse(min(windows) < df$age &  
-                                 df$age <= min(windows) + bucket/2, "older",NA))
+df$group = ifelse(df$age < min(windows),"younger", 
+                        ifelse(min(windows) <= df$age &  
+                                 df$age < min(windows) + bucket/2, "older",NA))
 df$group = fct_reorder(df$group, df$age)
 
-df_loess$group = ifelse(df_loess$loess_grid <= min(windows),"younger", 
-                        ifelse(min(windows) < df_loess$loess_grid &  
-                df_loess$loess_grid <= min(windows) + bucket/2, "older",NA))
+df_loess$group = ifelse(df_loess$loess_grid < min(windows),"younger", 
+                        ifelse(min(windows) <= df_loess$loess_grid &  
+                df_loess$loess_grid < min(windows) + bucket/2, "older",NA))
 df_loess$group = fct_reorder(df_loess$group, df_loess$loess_grid)
 ```
 
@@ -182,8 +187,8 @@ Run DE-SWAN on the LOESS-interpolated data, using a bucket of size 20 and window
 ```{R}
 bucket = 20
 windows = seq(min(age)+bucket/2, max(age)-bucket/2,by=1)
-de_swan_res = do_de_swan(age = loess_grid,
-                response = t(data.frame(loess_data)),
+de_swan_res = do_de_swan(age = df_loess$loess_grid,
+                response = t(data.frame(df_loess$loess_data)),
                 window = windows,
                 buckets_size = bucket)
 ```
@@ -278,7 +283,7 @@ Plot first window boxplots and Wilcoxon test results for LOESS-interpolated data
 q5 = df_loess %>%
   filter(!is.na(group)) %>%
   ggplot(aes(y=loess_data,x=group,fill=group)) +
-  geom_boxplot() + 
+  geom_boxplot(outlier.shape = NA) + 
   geom_jitter(height=0,width=0.1) + 
   stat_compare_means(position = position_nudge(y = -0.1,x=0.5)) + 
   scale_fill_manual(values=c("peachpuff2","darkseagreen1")) +
@@ -315,4 +320,13 @@ p5 = de_swan_res %>%
   theme_minimal()
 p0 + p5
 ggsave("figs/loess_de_swan_figure_d.jpeg",width=9,height=3.5,dpi=300)
+```
+
+Confirm significance test p-value for text.
+
+```{R}
+df_young = df_loess %>% filter(group=="younger")
+df_old = df_loess %>% filter(group=="older")
+wilcox.test(df_young$loess_data,df_old$loess_data,
+            exact=T)
 ```
