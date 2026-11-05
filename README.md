@@ -1,7 +1,7 @@
 # Artifactual Waves of Aging
 
 This repository contains code supporting _LOESS and DE-SWAN can induce artifactual "waves" of molecular aging_. 
-Code in this repository was written by Madeleine Carbonneau (mtcarbonneau) and Kate Shutta (katehoffshutta). Please raise any questions or comments regarding the code via Github. Please direct other correspondence to the corresponding author, John Quackenbush (johnq@hsph.harvard.edu). 
+Code in this repository was written by Madeleine Carbonneau (mtcarbonneau) and Kate Shutta (katehoffshutta). Please raise any questions or comments regarding the code via Github. Please direct other correspondence to the corresponding author, John Quackenbush (jquackenbush@uchicago.edu). 
 
 ## Citation
 
