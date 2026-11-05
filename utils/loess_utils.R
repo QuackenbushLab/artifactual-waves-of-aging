@@ -196,8 +196,12 @@ test_age_dist = function(my_ages,npred, bucket,
   }
   
   # now do loess on my_responses and run de_swan on that
-  loess_lattice = data.frame(x=seq(min(my_ages),
+  if(!do_ipop)
+    loess_lattice = data.frame(x=seq(min(my_ages),
                                    max(my_ages),by=0.5))
+  if(do_ipop)
+    loess_lattice = data.frame(x=seq(26,75,by=0.5))
+
   loessed_data = list()
   opt_spans = list()
   for(i in 1:nrow(my_responses))
@@ -295,9 +299,13 @@ plot_from_sim_list = function(sim_list, npred, loess=T){
   
 }
 
-loess_matrix = function(my_ages, my_responses, optimize_loess=F){
-  loess_lattice = data.frame(x=seq(min(my_ages),
+loess_matrix = function(my_ages, my_responses, optimize_loess=F, do_ipop=F, use_lattice = T){
+  if(!do_ipop)
+    loess_lattice = data.frame(x=seq(min(my_ages),
                                      max(my_ages),by=0.5))
+  if(do_ipop)
+    loess_lattice = data.frame(x=seq(26,
+                                     75,by=0.5))
   loessed_data = list()
   opt_spans = list()
   for(i in 1:nrow(my_responses))
@@ -316,7 +324,10 @@ loess_matrix = function(my_ages, my_responses, optimize_loess=F){
     
     # run loess model 
     loess_model = loess(my_responses[i,] ~ my_ages, span = loess_span)
-    loessed_data[[i]] = predict(loess_model, newdata = loess_lattice$x)
+    if(use_lattice)
+      loessed_data[[i]] = predict(loess_model, newdata = loess_lattice$x)
+    if(!use_lattice)
+      loessed_data[[i]] = predict(loess_model, newdata = my_ages)
   }
   
   loessed_data = Reduce(rbind.data.frame, loessed_data)

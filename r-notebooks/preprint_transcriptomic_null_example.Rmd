@@ -20,6 +20,7 @@ library(DEswan)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+library(ggrepel)
 library(gridExtra)
 library(logr)
 # optional for parallel processing
@@ -42,9 +43,11 @@ nit = 2
 doParallel::registerDoParallel(cores=2)
 ```
 
-Run LOESS + DE-SWAN on the iPOP age distribution for `nit` different random samples. In each case, the "expression levels" of the 8556 transcripts are simulated independently according to a uniform distribution. 
+Run LOESS + DE-SWAN on the iPOP age distribution for `nit` different random samples. In each case, the "expression levels" of the 8556 transcripts are simulated independently according to a uniform distribution. This can be time-consuming, so a log file is provided for monitoring progress.
 
 ```{R}
+log_open("transcriptomic.log")
+set.seed(1989)
 transcriptomic_ipop = foreach(i=1:nit) %dopar%
 { 
   test_age_dist(ipop_sample_data$adjusted_age,
@@ -55,24 +58,35 @@ transcriptomic_ipop = foreach(i=1:nit) %dopar%
               do_log = T,
               distribution = "standard_normal")
 }
+```
 
+Save the results.
+
+```{R}
+saveRDS(transcriptomic_ipop,file="transcriptomic_simulation_results.rds")
+```
+
+Stop the cluster and close the log.
+
+```{R}
 doParallel::stopImplicitCluster()
+log_close()
 ```
 
 Plot the waves of aging. Note that you will need to adjust the y-axis depending on the number of predictors you use. To reproduce the results of the paper, please set `ylim(5000,7000)` below.
 
 ```{R}
-plot_from_sim_list(transcriptomic_ipop,npred=50) + 
+plot_from_sim_list(transcriptomic_ipop,npred=8556) + 
   #ylim(5000,7000) +
-  ylim(0,50)+
+  ylim(0,800)+
   geom_vline(xintercept = 44, linetype = "dashed") +
   geom_vline(xintercept = 61, linetype = "dashed") +
-  annotate("text",x=48.5,y=5000,label="iPOP Tx Crest 1: 44") +
-  annotate("text",x=57.5,y=5000,label="iPOP Tx Crest 2: 61") +
-  ggtitle('Waves of Aging in Random "Transcriptomics"') +
+  annotate("text",x=48,y=5000,label="iPOP Tx Crest 1: 44") +
+  annotate("text",x=57.1,y=5000,label="iPOP Tx Crest 2: 61") +
   theme_minimal() +
   theme(title = element_text(hjust=0.5),
         legend.position = "none")
+ggsave("ipop_waves.jpeg",width=6,height=6,units="in")
 ```
 
 
@@ -80,7 +94,7 @@ Plot the correlations.
 
 ```{R}
 npeeps = list()
-npeeps[[40]] = sum(ipop_sample_data$adjusted_age >= 40 &
+npeeps[[40]] = sum(ipop_sample_data$adjusted_age >= 25 &
                      ipop_sample_data$adjusted_age < 50 )
 for(i in seq(41,65,by=1))
   npeeps[[i]] = sum(ipop_sample_data$adjusted_age >= (i-10) & 
@@ -97,12 +111,12 @@ mean_profile = all_profiles_df %>%
 
 mean_profile$npeeps = unlist(npeeps)
 
-library(ggrepel)
+set.seed(1213)
 ggplot(mean_profile, aes(x=npeeps/nrow(ipop_sample_data), y=mean_nhits, label=center, color=center)) + 
   geom_point() +
   geom_label_repel() + 
   xlab("proportion of total study population falling in sliding window") +
-  ylab("average # molecules/8556 with q < 0.05 (nsim = 50)") + 
-  ggtitle("Number of hits anticorrelates with number of samples in window")
-
+  ylab("average # molecules/8556 with q < 0.05") + 
+  theme_minimal()
+ggsave("hits_and_sample_size_quantiles.jpeg",width=7,height=6.5,units="in")
 ```
